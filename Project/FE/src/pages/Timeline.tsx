@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Calendar, Plus, Heart, Camera, MapPin, Users, Gift, Star, Edit3, Trash2 } from 'lucide-react';
-import axios from 'axios';
-import { api } from '../services/api';
+import api from '../services/api';
 
 interface TimelineEvent {
   id: string;
