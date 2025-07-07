@@ -22,7 +22,10 @@ const app = express();
 
 // Enable CORS
 app.use(cors({
-  origin: 'http://localhost:5173', // Vite dev server
+  origin: [
+    'http://localhost:5173',                // Local dev
+    'https://your-frontend.vercel.app'      // Replace with your actual Vercel URL
+  ],
   credentials: true
 }));
 
