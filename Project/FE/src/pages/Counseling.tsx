@@ -14,8 +14,7 @@ import {
   CheckCircle,
   X
 } from 'lucide-react';
-import axios from 'axios';
-import { api } from '../services/api';
+import api from '../services/api';
 // (revert: do not import useAuth or api)
 
 interface Counselor {

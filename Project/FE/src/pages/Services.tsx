@@ -17,8 +17,7 @@ import {
   Award,
   X
 } from 'lucide-react';
-import axios from 'axios';
-import { api } from '../services/api';
+import api from '../services/api';
 
 interface Service {
   id: string;

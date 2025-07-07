@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Heart, MessageCircle, Share2, ThumbsUp, Users, Calendar, MapPin, Plus, Filter, X } from 'lucide-react';
-import axios from 'axios';
-import { api } from '../services/api';
+import api from '../services/api';
 
 interface Post {
   id: string;
