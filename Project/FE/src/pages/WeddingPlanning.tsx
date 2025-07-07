@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   Calendar, 
   CheckCircle, 
-  Clock, 
   Users, 
   MapPin, 
   Camera, 
@@ -16,7 +15,7 @@ import {
   Edit3,
   Trash2
 } from 'lucide-react';
-import axios from 'axios';
+import api from '../services/api';
 
 interface Task {
   id: string;
@@ -135,7 +134,7 @@ const WeddingPlanning: React.FC = () => {
           ...newTask,
           completed: false
         };
-        const res = await axios.post('http://localhost:5000/api/tasks', payload);
+        const res = await api.post('/tasks', payload);
         savedTask = res.data;
       } catch {
         // fallback: just use local state

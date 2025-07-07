@@ -15,6 +15,7 @@ import {
   X
 } from 'lucide-react';
 import axios from 'axios';
+import { api } from '../services/api';
 // (revert: do not import useAuth or api)
 
 interface Counselor {
@@ -171,7 +172,7 @@ const Counseling: React.FC = () => {
         status: 'upcoming',
         topic: bookingForm.topic
       };
-      await axios.post('http://localhost:5000/api/sessions', payload);
+      await api.post('/sessions', payload);
       setSessions([...sessions, { ...payload, id: Date.now().toString() }]);
       setShowBookingModal(false);
       setBookingForm({ date: '', time: '', type: 'video', topic: '' });

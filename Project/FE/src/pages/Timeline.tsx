@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Plus, Heart, Camera, MapPin, Users, Gift, Star, Edit3, Trash2 } from 'lucide-react';
 import axios from 'axios';
+import { api } from '../services/api';
 
 interface TimelineEvent {
   id: string;
@@ -97,7 +98,7 @@ const Timeline: React.FC = () => {
         photos: [],
         participants: ['You', 'Priya Sharma']
       };
-      const res = await axios.post('http://localhost:5000/api/timeline', payload);
+      const res = await api.post('/timeline', payload);
       const savedEvent = res.data;
       setEvents([...events, {
         ...savedEvent,

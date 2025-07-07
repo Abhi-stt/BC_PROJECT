@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Heart, MessageCircle, Share2, ThumbsUp, Users, Calendar, MapPin, Plus, Filter, X } from 'lucide-react';
 import axios from 'axios';
+import { api } from '../services/api';
 
 interface Post {
   id: string;
@@ -499,7 +500,7 @@ Remember, while planning is important, don't forget to enjoy the journey and cel
         timestamp: 'Just now',
         type: newPost.type
       };
-      const res = await axios.post('http://localhost:5000/api/posts', payload);
+      const res = await api.post('/posts', payload);
       const savedPost = res.data;
       setPosts([{ ...savedPost, id: savedPost._id || Date.now().toString(), likes: 0, comments: 0, shares: 0, liked: false }, ...posts]);
       setNewPost({ content: '', type: 'general', image: '' });

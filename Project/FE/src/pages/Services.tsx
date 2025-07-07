@@ -18,6 +18,7 @@ import {
   X
 } from 'lucide-react';
 import axios from 'axios';
+import { api } from '../services/api';
 
 interface Service {
   id: string;
@@ -201,7 +202,7 @@ const Services: React.FC = () => {
         ...newService,
         services: newService.services.filter(s => s.trim() !== '')
       };
-      const res = await axios.post('http://localhost:5000/api/services', payload);
+      const res = await api.post('/services', payload);
       const savedService = res.data;
       setServices([{ ...savedService, id: savedService._id || Date.now().toString() }, ...services]);
       setShowListService(false);
