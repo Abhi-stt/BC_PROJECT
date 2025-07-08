@@ -19,39 +19,24 @@ const successStoryRoutes = require('./routes/successStory.routes');
 const notificationRoutes = require('./routes/notification.routes');
 
 const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000', // Replace with your actual Vercel URL
-  // Add any other frontend URLs here
+  'https://bc-project-yz4x.vercel.app', // Your deployed frontend
 ];
 
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // Allow tools like Postman
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+};
+
 const app = express();
-
-// Clean, robust CORS middleware
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-}));
-
-// Preflight for all routes
-app.options('*', cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-}));
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Log Origin header and CORS errors for debugging
 app.use((req, res, next) => {
