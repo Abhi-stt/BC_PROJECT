@@ -89,4 +89,14 @@ export const sampleUsers = [
     name: 'Rahul Verma',
     avatar: 'https://randomuser.me/api/portraits/men/2.jpg'
   }
-]; 
+];
+
+export const adminStats = {
+  totalUsers: 1200,
+  activeUsers: 950,
+  matchesMade: 320,
+  eventsHosted: 12,
+  revenue: 150000,
+  newRegistrations: 45,
+  feedbackScore: 4.7
+}; 
