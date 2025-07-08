@@ -20,8 +20,7 @@ const notificationRoutes = require('./routes/notification.routes');
 
 const allowedOrigins = [
   'http://localhost:5173',
-  'http://localhost:3000',
-  'https://your-frontend.vercel.app', // Replace with your actual Vercel URL
+  'http://localhost:3000', // Replace with your actual Vercel URL
   // Add any other frontend URLs here
 ];
 
