@@ -19,17 +19,22 @@ const successStoryRoutes = require('./routes/successStory.routes');
 const notificationRoutes = require('./routes/notification.routes');
 
 const allowedOrigins = [
-  'https://bc-project-yz4x.vercel.app', // Your deployed frontend
+  'https://bc-project-yz4x.vercel.app', // Main production frontend
+  // Add more static URLs if needed
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // Allow tools like Postman
+    if (!origin) return callback(null, true);
+    // Allow main production frontend
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
     }
+    // Allow Vercel preview deployments
+    if (/^https:\/\/bc-project-yz4x-.*\.vercel\.app$/.test(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
 };
