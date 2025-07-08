@@ -18,16 +18,62 @@ const postRoutes = require('./routes/post.routes');
 const successStoryRoutes = require('./routes/successStory.routes');
 const notificationRoutes = require('./routes/notification.routes');
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://your-frontend.vercel.app', // Replace with your actual Vercel URL
+  // Add any other frontend URLs here
+];
+
 const app = express();
 
-// Enable CORS
+// Clean, robust CORS middleware
 app.use(cors({
-  origin: [
-    'http://localhost:5173',                // Local dev
-    'https://your-frontend.vercel.app'      // Replace with your actual Vercel URL
-  ],
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
 }));
+
+// Preflight for all routes
+app.options('*', cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
+
+// Log Origin header and CORS errors for debugging
+app.use((req, res, next) => {
+  console.log(`[CORS DEBUG] Origin: ${req.headers.origin} | Path: ${req.path}`);
+  next();
+});
+
+// In the CORS middleware, add an error handler for CORS
+app.use((err, req, res, next) => {
+  if (err && err.message === 'Not allowed by CORS') {
+    console.error(`[CORS ERROR] Blocked Origin: ${req.headers.origin} | Path: ${req.path}`);
+    res.status(403).json({ error: 'CORS error: Origin not allowed' });
+  } else {
+    next(err);
+  }
+});
+
+// CORS test endpoint
+app.get('/api/cors-test', (req, res) => {
+  res.json({ success: true, message: 'CORS is working!' });
+});
 
 app.use(bodyParser.json());
 
