@@ -10,7 +10,12 @@ router.post('/', async (req, res) => {
 
 // List/search events
 router.get('/', async (req, res) => {
-  res.json(await Event.find());
+  try {
+    const events = await Event.find();
+    res.status(200).json(events); // Always return 200 with array
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
 // Get event details
