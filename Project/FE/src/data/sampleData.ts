@@ -77,16 +77,37 @@ export const sampleUsers = [
   {
     id: 'u1',
     name: 'You',
+    age: 28,
+    lastActive: '2 hours ago',
+    compatibilityScore: 92,
+    photos: ['https://randomuser.me/api/portraits/men/1.jpg'],
+    location: 'Mumbai',
+    education: 'Graduate',
+    profession: 'Software',
     avatar: 'https://randomuser.me/api/portraits/men/1.jpg'
   },
   {
     id: 'u2',
     name: 'Priya Sharma',
+    age: 26,
+    lastActive: '10 minutes ago',
+    compatibilityScore: 88,
+    photos: ['https://randomuser.me/api/portraits/women/1.jpg'],
+    location: 'Delhi',
+    education: 'Post Graduate',
+    profession: 'Business',
     avatar: 'https://randomuser.me/api/portraits/women/1.jpg'
   },
   {
     id: 'u3',
     name: 'Rahul Verma',
+    age: 30,
+    lastActive: '1 day ago',
+    compatibilityScore: 85,
+    photos: ['https://randomuser.me/api/portraits/men/2.jpg'],
+    location: 'Bangalore',
+    education: 'Professional',
+    profession: 'Healthcare',
     avatar: 'https://randomuser.me/api/portraits/men/2.jpg'
   }
 ];
