@@ -28,7 +28,6 @@ const Sidebar: React.FC = () => {
     { path: '/app/messages', label: 'Messages', icon: MessageCircle },
     { path: '/app/timeline', label: 'Timeline', icon: Calendar },
     { path: '/app/community', label: 'Community', icon: Users },
-    { path: '/app/events', label: 'Events', icon: Calendar },
     { path: '/app/services', label: 'Services', icon: Briefcase },
     { path: '/app/counseling', label: 'Counseling', icon: HeartHandshake },
     { path: '/app/wedding-planning', label: 'Wedding Planning', icon: Heart },

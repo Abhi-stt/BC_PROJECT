@@ -47,7 +47,6 @@ function App() {
                 <Route path="profile" element={<Profile />} />
                 <Route path="timeline" element={<Timeline />} />
                 <Route path="community" element={<Community />} />
-                <Route path="events" element={<Events />} />
                 <Route path="services" element={<Services />} />
                 <Route path="counseling" element={<Counseling />} />
                 <Route path="wedding-planning" element={<WeddingPlanning />} />
