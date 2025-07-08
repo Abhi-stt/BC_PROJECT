@@ -8,13 +8,13 @@ const endpoints = [
   '/api/tasks',
   '/api/budgets',
   '/api/services',
-  '/api/events',
   '/api/counselors',
   '/api/sessions',
   '/api/posts',
   '/api/success-stories',
   '/api/notifications',
   '/api/cors-test',
+  '/api/events',
 ];
 
 const BASE_URLS = [

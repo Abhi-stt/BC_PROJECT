@@ -53,6 +53,7 @@ function App() {
                 <Route path="ai-assistant" element={<AIAssistant />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="admin" element={<Admin />} />
+                <Route path="events" element={<Events />} />
               </Route>
             </Routes>
           </Router>

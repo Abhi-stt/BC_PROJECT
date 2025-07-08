@@ -11,12 +11,12 @@ const timelineEventRoutes = require('./routes/timelineEvent.routes');
 const taskRoutes = require('./routes/task.routes');
 const budgetRoutes = require('./routes/budget.routes');
 const serviceRoutes = require('./routes/service.routes');
-const eventRoutes = require('./routes/event.routes');
 const counselorRoutes = require('./routes/counselor.routes');
 const sessionRoutes = require('./routes/session.routes');
 const postRoutes = require('./routes/post.routes');
 const successStoryRoutes = require('./routes/successStory.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const eventRoutes = require('./routes/event.routes');
 
 const allowedOrigins = [
   'https://bc-project-yz4x.vercel.app', // Main production frontend
@@ -87,12 +87,12 @@ app.use('/api/timeline', timelineEventRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/services', serviceRoutes);
-app.use('/api/events', eventRoutes);
 app.use('/api/counselors', counselorRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/success-stories', successStoryRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/events', eventRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

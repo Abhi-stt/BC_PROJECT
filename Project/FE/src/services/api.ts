@@ -222,48 +222,6 @@ export const messagesAPI = {
   }
 };
 
-// Events API
-export const eventsAPI = {
-  getEvents: async () => {
-    try {
-      const response = await api.get('/events');
-      return response.data;
-    } catch (error) {
-      console.warn('Backend not available, using sample events');
-      const { eventsList } = await import('../data/sampleData');
-      return eventsList;
-    }
-  },
-  
-  createEvent: async (eventData: any) => {
-    try {
-      const response = await api.post('/events', eventData);
-      return response.data;
-    } catch (error) {
-      console.warn('Backend not available, simulating event creation');
-      // Return a mock event with the submitted data
-      return {
-        id: Date.now().toString(),
-        ...eventData,
-        currentParticipants: 0,
-        registeredUsers: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-    }
-  },
-  
-  joinEvent: async (eventId: string) => {
-    try {
-      const response = await api.post(`/events/${eventId}/join`);
-      return response.data;
-    } catch (error) {
-      console.warn('Backend not available, simulating event join');
-      return { message: 'Successfully registered for event' };
-    }
-  }
-};
-
 // Services API
 export const servicesAPI = {
   getServices: async () => {
@@ -341,6 +299,48 @@ export const notificationsAPI = {
   markAllAsRead: async () => {
     const response = await api.put('/notifications/read-all');
     return response.data;
+  }
+};
+
+// Events API
+export const eventsAPI = {
+  getEvents: async () => {
+    try {
+      const response = await api.get('/events');
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, using sample events');
+      const { eventsList } = await import('../data/sampleData');
+      return eventsList;
+    }
+  },
+  
+  createEvent: async (eventData: any) => {
+    try {
+      const response = await api.post('/events', eventData);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, simulating event creation');
+      // Return a mock event with the submitted data
+      return {
+        id: Date.now().toString(),
+        ...eventData,
+        currentParticipants: 0,
+        registeredUsers: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+  },
+  
+  joinEvent: async (eventId: string) => {
+    try {
+      const response = await api.post(`/events/${eventId}/join`);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, simulating event join');
+      return { message: 'Successfully registered for event' };
+    }
   }
 };
 

@@ -16,7 +16,7 @@ interface Post {
   comments: number;
   shares: number;
   liked: boolean;
-  type: 'success_story' | 'advice' | 'event' | 'general';
+  type: 'success_story' | 'advice' | 'general';
 }
 
 interface SuccessStory {
@@ -53,7 +53,6 @@ const Community: React.FC = () => {
     type: 'general' as const,
     image: ''
   });
-  const [registeredEvents, setRegisteredEvents] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   
   const [posts, setPosts] = useState<Post[]>([
@@ -101,7 +100,7 @@ const Community: React.FC = () => {
       comments: 15,
       shares: 25,
       liked: false,
-      type: 'event'
+      type: 'general'
     }
   ]);
 
@@ -511,14 +510,6 @@ Remember, while planning is important, don't forget to enjoy the journey and cel
     }
   };
 
-  const handleRegisterEvent = (eventTitle: string) => {
-    if (registeredEvents.includes(eventTitle)) {
-      setRegisteredEvents(registeredEvents.filter(e => e !== eventTitle));
-    } else {
-      setRegisteredEvents([...registeredEvents, eventTitle]);
-    }
-  };
-
   const handleReadArticle = (article: Article) => {
     setSelectedArticle(article);
     setShowArticle(true);
@@ -570,7 +561,6 @@ Remember, while planning is important, don't forget to enjoy the journey and cel
                   <option value="general">General</option>
                   <option value="advice">Advice</option>
                   <option value="success_story">Success Story</option>
-                  <option value="event">Event</option>
                 </select>
                 <input
                   type="text"
@@ -637,7 +627,6 @@ Remember, while planning is important, don't forget to enjoy the journey and cel
         {[
           { id: 'feed', label: 'Community Feed' },
           { id: 'stories', label: 'Success Stories' },
-          { id: 'events', label: 'Events' },
           { id: 'advice', label: 'Advice Corner' }
         ].map(tab => (
           <button
@@ -710,7 +699,6 @@ Remember, while planning is important, don't forget to enjoy the journey and cel
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       post.type === 'success_story' ? 'bg-green-100 text-green-800' :
                       post.type === 'advice' ? 'bg-blue-100 text-blue-800' :
-                      post.type === 'event' ? 'bg-purple-100 text-purple-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
                       {post.type.replace('_', ' ').toUpperCase()}
@@ -775,69 +763,6 @@ Remember, while planning is important, don't forget to enjoy the journey and cel
               )}
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Events */}
-      {activeTab === 'events' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              {
-                title: 'Virtual Speed Networking',
-                date: 'Saturday, Feb 10, 2024',
-                time: '7:00 PM - 9:00 PM',
-                participants: 45,
-                description: 'Meet multiple potential matches in a fun, structured environment'
-              },
-              {
-                title: 'Cultural Exchange Workshop',
-                date: 'Sunday, Feb 18, 2024',
-                time: '3:00 PM - 5:00 PM',
-                participants: 32,
-                description: 'Learn about different cultural traditions and values'
-              },
-              {
-                title: 'Relationship Building Seminar',
-                date: 'Friday, Feb 23, 2024',
-                time: '6:00 PM - 8:00 PM',
-                participants: 28,
-                description: 'Expert advice on building strong, lasting relationships'
-              },
-              {
-                title: 'Family Integration Workshop',
-                date: 'Saturday, Mar 2, 2024',
-                time: '4:00 PM - 6:00 PM',
-                participants: 38,
-                description: 'Navigate family dynamics in modern relationships'
-              }
-            ].map((event, index) => (
-              <div key={index} className="card p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{event.title}</h3>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Calendar className="w-4 h-4" />
-                    <span className="text-sm">{event.date}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Users className="w-4 h-4" />
-                    <span className="text-sm">{event.participants} participants</span>
-                  </div>
-                </div>
-                <p className="text-gray-700 mb-4">{event.description}</p>
-                <button 
-                  onClick={() => handleRegisterEvent(event.title)}
-                  className={`w-full ${
-                    registeredEvents.includes(event.title) 
-                      ? 'btn-outline' 
-                      : 'btn-primary'
-                  }`}
-                >
-                  {registeredEvents.includes(event.title) ? 'Registered ✓' : 'Register Now'}
-                </button>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 

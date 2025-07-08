@@ -34,6 +34,7 @@ const Sidebar: React.FC = () => {
     { path: '/app/ai-assistant', label: 'AI Assistant', icon: Bot },
     { path: '/app/analytics', label: 'Analytics', icon: BarChart3 },
     { path: '/app/profile', label: 'Profile', icon: User },
+    { path: '/app/events', label: 'Events', icon: Calendar },
   ];
 
   if (user?.role === 'admin') {
