@@ -19,7 +19,7 @@ const notificationRoutes = require('./routes/notification.routes');
 const eventRoutes = require('./routes/event.routes');
 
 const allowedOrigins = [
-  'https://bc-project-yz4x.vercel.app', // Main production frontend
+  'https://bc-project-pbiz.vercel.app', // Main production frontend
   // Add more static URLs if needed
 ];
 
