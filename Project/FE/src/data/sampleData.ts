@@ -114,10 +114,15 @@ export const sampleUsers = [
 
 export const adminStats = {
   totalUsers: 1200,
+  verifiedUsers: 980,
   activeUsers: 950,
+  premiumUsers: 150,
   matchesMade: 320,
+  successfulMatches: 280,
   eventsHosted: 12,
   revenue: 150000,
   newRegistrations: 45,
+  pendingVerifications: 25,
+  reportedProfiles: 8,
   feedbackScore: 4.7
 }; 
