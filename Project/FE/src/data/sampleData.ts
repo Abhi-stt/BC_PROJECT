@@ -84,7 +84,9 @@ export const sampleUsers = [
     location: 'Mumbai',
     education: 'Graduate',
     profession: 'Software',
-    avatar: 'https://randomuser.me/api/portraits/men/1.jpg'
+    avatar: 'https://randomuser.me/api/portraits/men/1.jpg',
+    bio: 'Passionate software developer who loves coding and building meaningful applications. Looking for someone who shares similar values and goals.',
+    interests: ['Technology', 'Coding', 'Travel', 'Music', 'Reading']
   },
   {
     id: 'u2',
@@ -96,7 +98,9 @@ export const sampleUsers = [
     location: 'Delhi',
     education: 'Post Graduate',
     profession: 'Business',
-    avatar: 'https://randomuser.me/api/portraits/women/1.jpg'
+    avatar: 'https://randomuser.me/api/portraits/women/1.jpg',
+    bio: 'Business professional with a love for entrepreneurship and innovation. Enjoys networking, traveling, and exploring new cultures.',
+    interests: ['Business', 'Travel', 'Networking', 'Cooking', 'Fitness']
   },
   {
     id: 'u3',
@@ -108,7 +112,9 @@ export const sampleUsers = [
     location: 'Bangalore',
     education: 'Professional',
     profession: 'Healthcare',
-    avatar: 'https://randomuser.me/api/portraits/men/2.jpg'
+    avatar: 'https://randomuser.me/api/portraits/men/2.jpg',
+    bio: 'Healthcare professional dedicated to helping others. Passionate about medicine, fitness, and making a positive impact in people\'s lives.',
+    interests: ['Healthcare', 'Fitness', 'Sports', 'Reading', 'Volunteering']
   }
 ];
 
