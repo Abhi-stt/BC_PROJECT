@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { io, Socket } from 'socket.io-client';
 
-const API_BASE_URL = 'http://localhost:5000/api'; // Use local backend for local development
-const SOCKET_URL = 'http://localhost:5000'; // Use local backend for local development
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 // Socket.IO connection
 let socket: Socket | null = null;
