@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Edit3, Camera, MapPin, GraduationCap, Briefcase, Heart, Shield, Settings, X } from 'lucide-react';
+import { userAPI } from '../services/api';
 
 const Profile: React.FC = () => {
   const { user } = useAuth();

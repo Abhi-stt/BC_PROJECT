@@ -14,6 +14,7 @@ const PostSchema = new Schema({
   comments: { type: Number, default: 0 },
   shares: { type: Number, default: 0 },
   liked: { type: Boolean, default: false },
+  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   type: { type: String, enum: ['success_story', 'advice', 'event', 'general'], default: 'general' }
 }, { timestamps: true });
 

@@ -20,11 +20,13 @@ const UserSchema = new Schema({
     profession: String
   },
   isVerified: { type: Boolean, default: false },
+  status: { type: String, enum: ['active', 'pending', 'suspended', 'verified'], default: 'pending' },
+  isPremium: { type: Boolean, default: false },
   profileComplete: { type: Boolean, default: false },
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
   compatibilityScore: Number,
   verificationStatus: String,
   lastActive: String
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema); 

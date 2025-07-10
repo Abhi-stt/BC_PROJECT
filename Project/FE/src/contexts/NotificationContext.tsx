@@ -1,13 +1,16 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import api from '../services/api';
+import { userAPI } from '../services/api';
 
 interface Notification {
   id: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: 'info' | 'success' | 'warning' | 'error' | 'announcement';
   title: string;
   message: string;
   timestamp: string;
   read: boolean;
   actionUrl?: string;
+  author?: string; // Added for announcements
 }
 
 interface NotificationContextType {
@@ -30,33 +33,50 @@ export const useNotifications = () => {
 };
 
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'info',
-      title: 'New Match Found',
-      message: 'You have a new 95% compatibility match!',
-      timestamp: new Date().toISOString(),
-      read: false,
-      actionUrl: '/app/matches'
-    },
-    {
-      id: '2',
-      type: 'success',
-      title: 'Profile Verified',
-      message: 'Your profile has been successfully verified.',
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-      read: false
-    },
-    {
-      id: '3',
-      type: 'warning',
-      title: 'Complete Your Profile',
-      message: 'Add more photos to increase your match visibility.',
-      timestamp: new Date(Date.now() - 7200000).toISOString(),
-      read: true
-    }
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  // Fetch notifications and announcements from backend on mount
+  React.useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = user?.id;
+    if (!userId) return;
+    
+    // Fetch notifications
+    api.get(`/notifications?userId=${userId}`)
+      .then(res => {
+        const notificationData = res.data.map((n: any) => ({
+          ...n,
+          id: n._id,
+          type: n.type || 'info',
+          title: n.title || '',
+          message: n.message || '',
+          timestamp: n.timestamp || '',
+          read: !!n.read,
+          actionUrl: n.actionUrl || undefined
+        }));
+        
+        // Fetch announcements
+        userAPI.getAnnouncements().then(announcementData => {
+          const announcementNotifications = announcementData
+            .filter((a: any) => a.isActive)
+            .map((a: any) => ({
+              id: a.id,
+              type: 'announcement' as const,
+              title: a.title,
+              message: a.content,
+              timestamp: a.timestamp,
+              read: false,
+              author: a.author
+            }));
+          
+          // Merge notifications and announcements
+          setNotifications([...announcementNotifications, ...notificationData]);
+        }).catch(() => {
+          setNotifications(notificationData);
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -71,15 +91,26 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const markAsRead = (id: string) => {
-    setNotifications(prev => 
+    setNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, read: true } : n)
     );
+    // Persist to backend if not an announcement
+    const notification = notifications.find(n => n.id === id);
+    if (notification && notification.type !== 'announcement') {
+      api.put(`/notifications/${id}/read`).catch(() => {});
+    }
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev => 
+    setNotifications(prev =>
       prev.map(n => ({ ...n, read: true }))
     );
+    // Persist to backend for all real notifications
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const userId = user?.id;
+    if (userId) {
+      api.put(`/notifications/read-all?userId=${userId}`).catch(() => {});
+    }
   };
 
   const removeNotification = (id: string) => {

@@ -107,9 +107,19 @@ const Login: React.FC = () => {
           </div>
 
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Demo Credentials:</p>
-            <p className="text-xs text-gray-500">User: demo@bandhan.com / password</p>
-            <p className="text-xs text-gray-500">Admin: admin@bandhan.com / password</p>
+            <p className="text-sm text-gray-600 mb-2 font-medium">Demo Credentials:</p>
+            <div className="space-y-1">
+              <p className="text-xs text-gray-500">
+                <span className="font-medium">Demo User:</span> demo@bandhan.com / password
+              </p>
+              <p className="text-xs text-gray-500">
+                <span className="font-medium">Demo Admin:</span> admin@bandhan.com / password
+                <span className="text-blue-600 ml-1">(Admin panel access)</span>
+              </p>
+            </div>
+            <p className="text-xs text-gray-500 mt-2 italic">
+              Note: Only demo admin can access the admin panel
+            </p>
           </div>
         </div>
       </div>

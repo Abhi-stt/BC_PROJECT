@@ -24,6 +24,7 @@ import AIAssistant from './pages/AIAssistant';
 import VideoCall from './pages/VideoCall';
 import Counseling from './pages/Counseling';
 import WeddingPlanning from './pages/WeddingPlanning';
+import Support from './pages/Support';
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="admin" element={<Admin />} />
                 <Route path="events" element={<Events />} />
+                <Route path="support" element={<Support />} />
               </Route>
             </Routes>
           </Router>

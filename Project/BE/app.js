@@ -2,6 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const http = require('http');
+let io = null;
 
 // Import routers
 const userRoutes = require('./routes/user.routes');
@@ -17,8 +19,13 @@ const postRoutes = require('./routes/post.routes');
 const successStoryRoutes = require('./routes/successStory.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const eventRoutes = require('./routes/event.routes');
+const adminRoutes = require('./routes/admin.routes');
+const announcementRoutes = require('./routes/announcement.routes');
+const supportRoutes = require('./routes/support.routes');
+const { setIO } = require('./socket');
 
 const allowedOrigins = [
+  'http://localhost:5173', // Local frontend
   'https://bc-project-pbiz.vercel.app', // Main production frontend
   // Add more static URLs if needed
 ];
@@ -93,6 +100,9 @@ app.use('/api/posts', postRoutes);
 app.use('/api/success-stories', successStoryRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/announcements', announcementRoutes);
+app.use('/api/support', supportRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -102,7 +112,24 @@ app.get('/', (req, res) => {
 // Start server if run directly
 if (require.main === module) {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  const server = http.createServer(app);
+  const { Server } = require('socket.io');
+  io = new Server(server, {
+    cors: {
+      origin: [
+        'http://localhost:5173',
+        'https://bc-project-pbiz.vercel.app'
+      ],
+      methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+      credentials: true
+    }
+  });
+  io.on('connection', (socket) => {
+    console.log('Socket.IO client connected:', socket.id);
+  });
+  setIO(io); // Make io accessible globally
+  app.set('io', io); // (optional, for legacy)
+  server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }
 
 module.exports = app; 

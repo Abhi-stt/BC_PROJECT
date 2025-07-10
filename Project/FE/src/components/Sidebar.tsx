@@ -12,7 +12,8 @@ import {
   Bot,
   BarChart3,
   Video,
-  HeartHandshake
+  HeartHandshake,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -33,11 +34,12 @@ const Sidebar: React.FC = () => {
     { path: '/app/wedding-planning', label: 'Wedding Planning', icon: Heart },
     { path: '/app/ai-assistant', label: 'AI Assistant', icon: Bot },
     { path: '/app/analytics', label: 'Analytics', icon: BarChart3 },
+    { path: '/app/support', label: 'Support', icon: MessageSquare },
     { path: '/app/profile', label: 'Profile', icon: User },
     { path: '/app/events', label: 'Events', icon: Calendar },
   ];
 
-  if (user?.role === 'admin') {
+  if (user?.role === 'admin' && user?.email === 'admin@bandhan.com') {
     menuItems.push({ path: '/app/admin', label: 'Admin', icon: Shield });
   }
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Heart, Search, MessageCircle, User, Shield, Calendar, Users, Bot } from 'lucide-react';
+import { Heart, Search, MessageCircle, User, Shield, Calendar, Users, Bot, MessageSquare } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const BottomNav: React.FC = () => {
@@ -64,6 +64,16 @@ const BottomNav: React.FC = () => {
           <Users className="w-5 h-5" />
           <span className="text-xs mt-1">Community</span>
         </Link>
+
+        <Link
+          to="/app/support"
+          className={`flex flex-col items-center p-2 ${
+            isActive('/app/support') ? 'text-saffron' : 'text-gray-600'
+          }`}
+        >
+          <MessageSquare className="w-5 h-5" />
+          <span className="text-xs mt-1">Support</span>
+        </Link>
         
         <Link
           to="/app/profile"
@@ -75,7 +85,7 @@ const BottomNav: React.FC = () => {
           <span className="text-xs mt-1">Profile</span>
         </Link>
 
-        {user?.role === 'admin' && (
+        {user?.role === 'admin' && user?.email === 'admin@bandhan.com' && (
           <Link
             to="/app/admin"
             className={`flex flex-col items-center p-2 ${

@@ -206,43 +206,43 @@ const Events: React.FC = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Events</h1>
-        <button
+              <button 
           className="btn btn-primary flex items-center"
           onClick={() => setShowCreateEvent(true)}
         >
           <Plus className="w-4 h-4 mr-2" /> Create Event
-        </button>
-      </div>
+              </button>
+            </div>
       {/* Filter UI */}
       <div className="mb-6 flex gap-4 items-center">
-        <div>
+                <div>
           <label className="block text-sm font-medium text-gray-700">Type</label>
-          <select
+                  <select 
             className="form-select"
             value={filter.type}
             onChange={e => setFilter(f => ({ ...f, type: e.target.value }))}
           >
             <option value="all">All</option>
-            <option value="virtual">Virtual</option>
-            <option value="in-person">In-Person</option>
-            <option value="hybrid">Hybrid</option>
-          </select>
-        </div>
-        <div>
+                    <option value="virtual">Virtual</option>
+                    <option value="in-person">In-Person</option>
+                    <option value="hybrid">Hybrid</option>
+                  </select>
+              </div>
+              <div>
           <label className="block text-sm font-medium text-gray-700">Category</label>
-          <select
+                  <select 
             className="form-select"
             value={filter.category}
             onChange={e => setFilter(f => ({ ...f, category: e.target.value }))}
           >
             <option value="all">All</option>
-            <option value="networking">Networking</option>
-            <option value="workshop">Workshop</option>
-            <option value="social">Social</option>
-            <option value="cultural">Cultural</option>
-          </select>
-        </div>
-        <div>
+                    <option value="networking">Networking</option>
+                    <option value="workshop">Workshop</option>
+                    <option value="social">Social</option>
+                    <option value="cultural">Cultural</option>
+                  </select>
+                </div>
+                <div>
           <label className="block text-sm font-medium text-gray-700">Price</label>
           <select
             className="form-select"
@@ -255,8 +255,8 @@ const Events: React.FC = () => {
             <option value="under500">Under ₹500</option>
             <option value="over500">Over ₹500</option>
           </select>
-        </div>
-      </div>
+                </div>
+              </div>
       {/* Featured Events */}
       <h2 className="text-xl font-semibold text-gray-900 mb-4">Featured Events</h2>
       {loading ? (
@@ -297,19 +297,19 @@ const Events: React.FC = () => {
             <img src={event.image} alt={event.title} className="w-full h-40 object-cover rounded mb-4" />
             <h3 className="text-lg font-semibold text-gray-900">{event.title}</h3>
             <div className="flex items-center gap-2 text-gray-600 mb-2">
-              <Calendar className="w-4 h-4" />
+                        <Calendar className="w-4 h-4" />
               <span>{new Date(event.date).toLocaleDateString()}</span>
               <Clock className="w-4 h-4 ml-4" />
               <span>{event.time}</span>
-            </div>
+                      </div>
             <div className="flex items-center gap-2 text-gray-600 mb-2">
-              <MapPin className="w-4 h-4" />
+                        <MapPin className="w-4 h-4" />
               <span>{event.location}</span>
-            </div>
+                      </div>
             <div className="flex items-center gap-2 text-gray-600 mb-2">
-              <Users className="w-4 h-4" />
+                        <Users className="w-4 h-4" />
               <span>{event.currentParticipants}/{event.maxParticipants} participants</span>
-            </div>
+                      </div>
             <p className="text-gray-700 mb-4">{event.description}</p>
             <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${getTypeColor(event.type)}`}>{event.type}</span>
             <span className="inline-block px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-800 ml-2">{event.category}</span>
@@ -356,25 +356,25 @@ const Events: React.FC = () => {
                 value={formData.location}
                 onChange={e => handleInputChange('location', e.target.value)}
               />
-              <select
+            <select
                 className="form-select w-full"
                 value={formData.type}
                 onChange={e => handleInputChange('type', e.target.value)}
               >
-                <option value="virtual">Virtual</option>
-                <option value="in-person">In-Person</option>
-                <option value="hybrid">Hybrid</option>
-              </select>
-              <select
+              <option value="virtual">Virtual</option>
+              <option value="in-person">In-Person</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
+            <select
                 className="form-select w-full"
                 value={formData.category}
                 onChange={e => handleInputChange('category', e.target.value)}
               >
-                <option value="networking">Networking</option>
-                <option value="workshop">Workshop</option>
-                <option value="social">Social</option>
-                <option value="cultural">Cultural</option>
-              </select>
+              <option value="networking">Networking</option>
+              <option value="workshop">Workshop</option>
+              <option value="social">Social</option>
+              <option value="cultural">Cultural</option>
+            </select>
               <input
                 className="form-input w-full"
                 type="number"
@@ -410,7 +410,7 @@ const Events: React.FC = () => {
                 />
                 <span className="ml-2">Featured Event</span>
               </label>
-            </div>
+          </div>
             <div className="mt-6 flex justify-end gap-2">
               <button
                 className="btn btn-secondary"
@@ -419,19 +419,19 @@ const Events: React.FC = () => {
               >
                 Reset
               </button>
-              <button
+                        <button 
                 className="btn btn-primary"
                 onClick={handleSubmitEvent}
                 disabled={submitting}
               >
                 {submitting ? 'Creating...' : 'Create Event'}
-              </button>
-            </div>
-          </div>
+                        </button>
+                      </div>
+                    </div>
         </div>
       )}
     </div>
   );
 };
 
-export default Events; 
+export default Events;

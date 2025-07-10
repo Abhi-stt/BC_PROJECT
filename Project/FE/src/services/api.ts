@@ -1,6 +1,35 @@
 import axios from 'axios';
+import { io, Socket } from 'socket.io-client';
 
-const API_BASE_URL = 'https://bc-project.onrender.com/api';
+const API_BASE_URL = 'http://localhost:5000/api'; // Use local backend for local development
+const SOCKET_URL = 'http://localhost:5000'; // Use local backend for local development
+
+// Socket.IO connection
+let socket: Socket | null = null;
+
+export const initializeSocket = () => {
+  if (!socket) {
+    socket = io(SOCKET_URL, {
+      withCredentials: true,
+    });
+    
+    socket.on('connect', () => {
+      console.log('Connected to Socket.IO server');
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('Disconnected from Socket.IO server');
+    });
+  }
+  return socket;
+};
+
+export const getSocket = () => {
+  if (!socket) {
+    return initializeSocket();
+  }
+  return socket;
+};
 
 // Create axios instance with default config
 const api = axios.create({
@@ -57,11 +86,11 @@ export const authAPI = {
       return response.data;
     } catch (error) {
       console.warn('Backend not available, using mock authentication');
-      // Mock authentication for demo purposes
+      // Mock authentication for demo purposes - admin access restricted to specific credentials
       const mockUser = {
         id: '1',
         email,
-        name: email === 'admin@bandhan.com' ? 'Admin User' : 'Demo User',
+        name: email === 'admin@bandhan.com' ? 'Demo Admin User' : 'Demo User',
         isVerified: true,
         profileComplete: true,
         role: email === 'admin@bandhan.com' ? 'admin' : 'user'
@@ -116,6 +145,10 @@ export const userAPI = {
     const response = await api.get('/users/profile');
     return response.data;
   },
+  getAllUsers: async () => {
+    const response = await api.get('/users');
+    return response.data;
+  },
   
   updateProfile: async (profileData: any) => {
     const response = await api.put('/users/profile', profileData);
@@ -129,6 +162,27 @@ export const userAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;
+  },
+  getAllPosts: async () => {
+    const response = await api.get('/posts');
+    return response.data;
+  },
+  getAllReports: async () => {
+    const response = await api.get('/admin/reports');
+    return response.data;
+  },
+  getAnnouncements: async () => {
+    const response = await api.get('/announcements');
+    return response.data.map((a: any) => ({
+      ...a,
+      id: a._id,
+      title: a.title || '',
+      content: a.content || '',
+      author: a.author || '',
+      timestamp: a.timestamp || '',
+      isActive: typeof a.isActive === 'boolean' ? a.isActive : true,
+      targetAudience: a.targetAudience || ['all'],
+    }));
   }
 };
 
@@ -299,6 +353,14 @@ export const notificationsAPI = {
   markAllAsRead: async () => {
     const response = await api.put('/notifications/read-all');
     return response.data;
+  },
+  markNotificationAsRead: async (id: string) => {
+    const response = await api.put(`/notifications/${id}/read`);
+    return response.data;
+  },
+  markAllNotificationsAsRead: async (userId: string) => {
+    const response = await api.put(`/notifications/read-all?userId=${userId}`);
+    return response.data;
   }
 };
 
@@ -340,6 +402,187 @@ export const eventsAPI = {
     } catch (error) {
       console.warn('Backend not available, simulating event join');
       return { message: 'Successfully registered for event' };
+    }
+  }
+};
+
+// Admin API
+export const adminAPI = {
+  // User Management
+  verifyUser: async (userId: string) => {
+    const response = await api.patch(`/users/${userId}/verify`);
+    return response.data;
+  },
+  
+  suspendUser: async (userId: string) => {
+    const response = await api.patch(`/users/${userId}/suspend`);
+    return response.data;
+  },
+  
+  activateUser: async (userId: string) => {
+    const response = await api.patch(`/users/${userId}/activate`);
+    return response.data;
+  },
+  
+  makePremium: async (userId: string) => {
+    const response = await api.patch(`/users/${userId}/premium`);
+    return response.data;
+  },
+  
+  deleteUser: async (userId: string) => {
+    const response = await api.delete(`/admin/users/${userId}`);
+    return response.data;
+  },
+  
+  // Content Moderation
+  approvePost: async (postId: string) => {
+    const response = await api.patch(`/admin/posts/${postId}/approve`);
+    return response.data;
+  },
+  
+  rejectPost: async (postId: string) => {
+    const response = await api.patch(`/admin/posts/${postId}/reject`);
+    return response.data;
+  },
+  
+  deletePost: async (postId: string) => {
+    const response = await api.delete(`/admin/posts/${postId}`);
+    return response.data;
+  },
+  
+  resolveReport: async (reportId: string) => {
+    const response = await api.patch(`/admin/reports/${reportId}/resolve`);
+    return response.data;
+  },
+  
+  reviewReport: async (reportId: string) => {
+    const response = await api.patch(`/admin/reports/${reportId}/review`);
+    return response.data;
+  },
+  
+  // Announcements
+  createAnnouncement: async (announcementData: any) => {
+    const response = await api.post('/announcements', announcementData);
+    return response.data;
+  },
+  
+  getAnnouncements: async () => {
+    const response = await api.get('/announcements');
+    return response.data;
+  },
+  
+  toggleAnnouncement: async (announcementId: string) => {
+    const response = await api.patch(`/announcements/${announcementId}/activate`);
+    return response.data;
+  },
+  
+  deleteAnnouncement: async (announcementId: string) => {
+    const response = await api.delete(`/announcements/${announcementId}`);
+    return response.data;
+  },
+  
+  // Notifications
+  createNotification: async (notificationData: any) => {
+    const response = await api.post('/notifications', notificationData);
+    return response.data;
+  },
+  
+  getNotifications: async (userId?: string) => {
+    const params = userId ? { userId } : {};
+    const response = await api.get('/notifications', { params });
+    return response.data;
+  }
+};
+
+// Support API
+export const supportAPI = {
+  // User functions
+  createTicket: async (ticketData: any) => {
+    try {
+      const response = await api.post('/support', ticketData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating ticket:', error);
+      throw new Error('Failed to create ticket');
+    }
+  },
+  
+  getMyTickets: async () => {
+    try {
+      const response = await api.get('/support/my-tickets');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching user tickets:', error);
+      throw new Error('Failed to fetch tickets');
+    }
+  },
+  
+  getTicket: async (ticketId: string) => {
+    try {
+      console.log('Fetching ticket:', ticketId);
+      const response = await api.get(`/support/${ticketId}`);
+      console.log('Ticket response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching ticket:', error);
+      throw new Error('Failed to fetch ticket');
+    }
+  },
+  
+  addReply: async (ticketId: string, message: string) => {
+    try {
+      const response = await api.post(`/support/${ticketId}/reply`, { message });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error adding reply:', error);
+      throw new Error('Failed to add reply');
+    }
+  },
+  
+  // Admin functions
+  getAllTickets: async () => {
+    try {
+      const response = await api.get('/support/admin/all');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching tickets from backend:', error);
+      if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+      if (error.response?.status === 403) {
+        throw new Error('Admin access required.');
+      }
+      throw new Error('Failed to fetch tickets from server');
+    }
+  },
+  
+  updateTicketStatus: async (ticketId: string, status: string) => {
+    try {
+      const response = await api.patch(`/support/admin/${ticketId}/status`, { status });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error updating ticket status:', error);
+      throw new Error('Failed to update ticket status');
+    }
+  },
+  
+  assignTicket: async (ticketId: string, assignedTo: string) => {
+    try {
+      const response = await api.patch(`/support/admin/${ticketId}/assign`, { assignedTo });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error assigning ticket:', error);
+      throw new Error('Failed to assign ticket');
+    }
+  },
+  
+  updateTicketPriority: async (ticketId: string, priority: string) => {
+    try {
+      const response = await api.patch(`/support/admin/${ticketId}/priority`, { priority });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error updating ticket priority:', error);
+      throw new Error('Failed to update ticket priority');
     }
   }
 };

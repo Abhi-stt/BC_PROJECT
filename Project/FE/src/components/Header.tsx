@@ -62,7 +62,7 @@ const Header: React.FC = () => {
               <Bot className="w-4 h-4" />
               AI Assistant
             </Link>
-            {user?.role === 'admin' && (
+            {user?.role === 'admin' && user?.email === 'admin@bandhan.com' && (
               <Link to="/app/admin" className="text-gray-600 hover:text-saffron transition-colors flex items-center gap-1">
                 <Shield className="w-4 h-4" />
                 Admin
@@ -119,7 +119,7 @@ const Header: React.FC = () => {
                           key={notification.id}
                           className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
                             !notification.read ? 'bg-blue-50' : ''
-                          }`}
+                          } ${notification.type === 'announcement' ? 'bg-yellow-50 border-yellow-200' : ''}`}
                           onClick={() => {
                             markAsRead(notification.id);
                             if (notification.actionUrl) {
@@ -130,6 +130,7 @@ const Header: React.FC = () => {
                         >
                           <div className="flex items-start gap-3">
                             <div className={`w-2 h-2 rounded-full mt-2 ${
+                              notification.type === 'announcement' ? 'bg-yellow-500' :
                               notification.type === 'success' ? 'bg-green-500' :
                               notification.type === 'warning' ? 'bg-yellow-500' :
                               notification.type === 'error' ? 'bg-red-500' :
@@ -138,7 +139,10 @@ const Header: React.FC = () => {
                             <div className="flex-1">
                               <h4 className="font-medium text-gray-900">{notification.title}</h4>
                               <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                              <p className="text-xs text-gray-400 mt-2">{formatTime(notification.timestamp)}</p>
+                              <p className="text-xs text-gray-400 mt-2">
+                                {notification.type === 'announcement' && notification.author && `By ${notification.author} • `}
+                                {formatTime(notification.timestamp)}
+                              </p>
                             </div>
                             {!notification.read && (
                               <div className="w-2 h-2 bg-blue-500 rounded-full" />

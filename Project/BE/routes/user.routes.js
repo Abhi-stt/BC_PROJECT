@@ -3,6 +3,7 @@ const router = express.Router();
 const User = require('../user.schema');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Notification = require('../notification.schema');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -143,6 +144,133 @@ router.delete('/:id', async (req, res) => {
 // List/search users
 router.get('/', async (req, res) => {
   res.json(await User.find());
+});
+
+// Admin: Verify user
+router.patch('/:id/verify', async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isVerified: true, status: 'verified' },
+      { new: true }
+    );
+    // Create notification
+    await Notification.create({
+      userId: user._id,
+      type: 'success',
+      title: 'Profile Verified',
+      message: 'Your profile has been verified by the admin.',
+      timestamp: new Date().toISOString(),
+      read: false
+    });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to verify user' });
+  }
+});
+
+// Admin: Suspend user
+router.patch('/:id/suspend', async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { status: 'suspended' },
+      { new: true }
+    );
+    // Create notification
+    await Notification.create({
+      userId: user._id,
+      type: 'warning',
+      title: 'Account Suspended',
+      message: 'Your account has been suspended by the admin.',
+      timestamp: new Date().toISOString(),
+      read: false
+    });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to suspend user' });
+  }
+});
+
+// Admin: Activate user
+router.patch('/:id/activate', async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { status: 'active' },
+      { new: true }
+    );
+    // Create notification
+    await Notification.create({
+      userId: user._id,
+      type: 'info',
+      title: 'Account Activated',
+      message: 'Your account has been re-activated by the admin.',
+      timestamp: new Date().toISOString(),
+      read: false
+    });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to activate user' });
+  }
+});
+
+// Admin: Make user premium
+router.patch('/:id/premium', async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isPremium: true },
+      { new: true }
+    );
+    // Create notification
+    await Notification.create({
+      userId: user._id,
+      type: 'success',
+      title: 'Premium Activated',
+      message: 'Congratulations! You have been granted premium status by the admin.',
+      timestamp: new Date().toISOString(),
+      read: false
+    });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to make user premium' });
+  }
+});
+
+// Make user admin
+router.patch('/:id/make-admin', async (req, res) => {
+  try {
+    console.log('Making user admin - User ID:', req.params.id);
+    
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { role: 'admin' },
+      { new: true }
+    );
+    
+    if (!user) {
+      console.log('Make admin - User not found');
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    console.log('Make admin - User role updated successfully:', user._id, user.role);
+    
+    // Create notification
+    await Notification.create({
+      userId: user._id,
+      type: 'success',
+      title: 'Admin Role Granted',
+      message: 'You have been granted admin privileges by the system.',
+      timestamp: new Date().toISOString(),
+      read: false
+    });
+    
+    res.json(user);
+  } catch (error) {
+    console.error('Make admin - Error:', error);
+    res.status(500).json({ error: 'Failed to make user admin: ' + error.message });
+  }
 });
 
 module.exports = router; 

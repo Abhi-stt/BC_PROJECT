@@ -7,7 +7,8 @@ const NotificationSchema = new Schema({
   message: String,
   timestamp: String,
   read: Boolean,
-  actionUrl: String
+  actionUrl: String,
+  userId: { type: String, required: true }
 });
 
 module.exports = mongoose.model('Notification', NotificationSchema); 
