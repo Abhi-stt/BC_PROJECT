@@ -103,6 +103,27 @@ const communitySchema = new mongoose.Schema({
       default: 'upcoming'
     }
   }],
+  // Add matrimonialProfiles subdocument
+  matrimonialProfiles: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    userName: String,
+    userEmail: String,
+    age: Number,
+    profession: String,
+    location: String,
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    submittedDate: { type: Date, default: Date.now },
+    photo: String
+  }],
+  // Add queries subdocument
+  queries: [{
+    from: String,
+    subject: String,
+    message: String,
+    status: { type: String, enum: ['unread', 'read', 'replied'], default: 'unread' },
+    createdAt: { type: Date, default: Date.now },
+    reply: String
+  }],
   monthlyGrowth: {
     type: Number,
     default: 0

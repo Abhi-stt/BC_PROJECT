@@ -397,6 +397,57 @@ const deleteCounselor = async (req, res) => {
   }
 };
 
+// --- Counseling Requests ---
+// Get all counseling requests
+const getCounselingRequests = async (req, res) => {
+  try {
+    const counselor = await Counselor.findById(req.params.counselorId);
+    if (!counselor) return res.status(404).json({ message: 'Counselor not found' });
+    res.json(counselor.counselingRequests || []);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching counseling requests' });
+  }
+};
+// Update request status
+const updateRequestStatus = async (req, res) => {
+  try {
+    const counselor = await Counselor.findById(req.params.counselorId);
+    if (!counselor) return res.status(404).json({ message: 'Counselor not found' });
+    const request = counselor.counselingRequests.id(req.params.requestId);
+    if (!request) return res.status(404).json({ message: 'Request not found' });
+    request.status = req.body.status;
+    await counselor.save();
+    res.json(request);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating request status' });
+  }
+};
+// --- Sessions ---
+// Get all sessions
+const getSessions = async (req, res) => {
+  try {
+    const counselor = await Counselor.findById(req.params.counselorId);
+    if (!counselor) return res.status(404).json({ message: 'Counselor not found' });
+    res.json(counselor.sessions || []);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching sessions' });
+  }
+};
+// Update session status
+const updateSessionStatus = async (req, res) => {
+  try {
+    const counselor = await Counselor.findById(req.params.counselorId);
+    if (!counselor) return res.status(404).json({ message: 'Counselor not found' });
+    const session = counselor.sessions.id(req.params.sessionId);
+    if (!session) return res.status(404).json({ message: 'Session not found' });
+    session.status = req.body.status;
+    await counselor.save();
+    res.json(session);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating session status' });
+  }
+};
+
 module.exports = {
   getAllCounselors,
   getCounselorById,
@@ -408,5 +459,9 @@ module.exports = {
   updateTimeSlot,
   deleteTimeSlot,
   getCounselorAnalytics,
-  deleteCounselor
+  deleteCounselor,
+  getCounselingRequests,
+  updateRequestStatus,
+  getSessions,
+  updateSessionStatus
 }; 

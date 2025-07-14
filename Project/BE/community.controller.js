@@ -426,6 +426,58 @@ const deleteCommunity = async (req, res) => {
   }
 };
 
+// --- Matrimonial Profiles ---
+// Get all matrimonial profiles
+const getMatrimonialProfiles = async (req, res) => {
+  try {
+    const community = await Community.findById(req.params.communityId);
+    if (!community) return res.status(404).json({ message: 'Community not found' });
+    res.json(community.matrimonialProfiles || []);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching matrimonial profiles' });
+  }
+};
+// Update profile status
+const updateProfileStatus = async (req, res) => {
+  try {
+    const community = await Community.findById(req.params.communityId);
+    if (!community) return res.status(404).json({ message: 'Community not found' });
+    const profile = community.matrimonialProfiles.id(req.params.profileId);
+    if (!profile) return res.status(404).json({ message: 'Profile not found' });
+    profile.status = req.body.status;
+    await community.save();
+    res.json(profile);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating profile status' });
+  }
+};
+// --- Queries ---
+// Get all queries
+const getCommunityQueries = async (req, res) => {
+  try {
+    const community = await Community.findById(req.params.communityId);
+    if (!community) return res.status(404).json({ message: 'Community not found' });
+    res.json(community.queries || []);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching queries' });
+  }
+};
+// Reply to a query
+const replyToCommunityQuery = async (req, res) => {
+  try {
+    const community = await Community.findById(req.params.communityId);
+    if (!community) return res.status(404).json({ message: 'Community not found' });
+    const query = community.queries.id(req.params.queryId);
+    if (!query) return res.status(404).json({ message: 'Query not found' });
+    query.reply = req.body.reply;
+    query.status = 'replied';
+    await community.save();
+    res.json(query);
+  } catch (error) {
+    res.status(500).json({ message: 'Error replying to query' });
+  }
+};
+
 module.exports = {
   getAllCommunities,
   getCommunityById,
@@ -438,5 +490,9 @@ module.exports = {
   deleteEvent,
   getCommunityAnalytics,
   getCommunityMembers,
-  deleteCommunity
+  deleteCommunity,
+  getMatrimonialProfiles,
+  updateProfileStatus,
+  getCommunityQueries,
+  replyToCommunityQuery
 }; 

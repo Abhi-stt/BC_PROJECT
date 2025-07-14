@@ -28,6 +28,13 @@ router.delete('/:counselorId/time-slots/:slotId', counselorController.deleteTime
 // Analytics
 router.get('/:counselorId/analytics', counselorController.getCounselorAnalytics);
 
+// Counseling Requests
+router.get('/:counselorId/requests', counselorController.getCounselingRequests);
+router.put('/:counselorId/requests/:requestId/status', counselorController.updateRequestStatus);
+// Sessions
+router.get('/:counselorId/sessions', counselorController.getSessions);
+router.put('/:counselorId/sessions/:sessionId/status', counselorController.updateSessionStatus);
+
 // Delete counselor (admin only)
 router.delete('/:counselorId', counselorController.deleteCounselor);
 

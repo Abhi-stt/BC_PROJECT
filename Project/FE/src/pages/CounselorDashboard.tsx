@@ -21,6 +21,9 @@ import {
   MapPin
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { counselorAPI } from '../services/api';
+import { counselorDataAPI } from '../services/api';
+import { getSocket } from '../services/api';
 
 interface TimeSlot {
   id: string;
@@ -83,138 +86,82 @@ const CounselorDashboard: React.FC = () => {
   });
 
   // Time slots state
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([
-    {
-      id: '1',
-      day: 'Monday',
-      startTime: '09:00',
-      endTime: '17:00',
-      isAvailable: true,
-      sessionType: 'both'
-    },
-    {
-      id: '2',
-      day: 'Tuesday',
-      startTime: '10:00',
-      endTime: '18:00',
-      isAvailable: true,
-      sessionType: 'online'
-    },
-    {
-      id: '3',
-      day: 'Wednesday',
-      startTime: '09:00',
-      endTime: '17:00',
-      isAvailable: true,
-      sessionType: 'offline'
-    }
-  ]);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
 
   // Counseling requests state
-  const [counselingRequests, setCounselingRequests] = useState<CounselingRequest[]>([
-    {
-      id: '1',
-      userId: 'user1',
-      userName: 'Priya Sharma',
-      userEmail: 'priya@example.com',
-      userPhone: '+91 98765 43210',
-      issue: 'Pre-marital counseling needed for communication issues',
-      preferredTime: '2024-01-20T14:00:00Z',
-      sessionType: 'online',
-      status: 'pending',
-      createdAt: '2024-01-15T10:30:00Z'
-    },
-    {
-      id: '2',
-      userId: 'user2',
-      userName: 'Rahul Patel',
-      userEmail: 'rahul@example.com',
-      userPhone: '+91 87654 32109',
-      issue: 'Post-marital counseling for relationship conflicts',
-      preferredTime: '2024-01-21T16:00:00Z',
-      sessionType: 'offline',
-      status: 'accepted',
-      createdAt: '2024-01-14T15:45:00Z'
-    }
-  ]);
+  const [counselingRequests, setCounselingRequests] = useState<CounselingRequest[]>([]);
 
   // Sessions state
-  const [sessions, setSessions] = useState<Session[]>([
-    {
-      id: '1',
-      userId: 'user1',
-      userName: 'Priya Sharma',
-      date: '2024-01-20',
-      time: '14:00',
-      duration: 60,
-      sessionType: 'online',
-      status: 'scheduled',
-      notes: 'First session - communication issues'
-    },
-    {
-      id: '2',
-      userId: 'user2',
-      userName: 'Rahul Patel',
-      date: '2024-01-21',
-      time: '16:00',
-      duration: 90,
-      sessionType: 'offline',
-      status: 'completed',
-      notes: 'Relationship conflict resolution',
-      rating: 5,
-      feedback: 'Very helpful session, learned a lot about communication'
-    }
-  ]);
+  const [sessions, setSessions] = useState<Session[]>([]);
 
   // Analytics state
   const [analytics, setAnalytics] = useState({
-    totalSessions: 45,
-    completedSessions: 42,
-    totalRequests: 28,
-    averageRating: 4.8,
-    totalEarnings: 67500,
-    monthlyGrowth: 12
+    totalSessions: 0,
+    completedSessions: 0,
+    totalRequests: 0,
+    averageRating: 0,
+    totalEarnings: 0,
+    monthlyGrowth: 0
   });
 
+  const [timeSlotDay, setTimeSlotDay] = useState('Monday');
+  const [timeSlotStart, setTimeSlotStart] = useState('09:00');
+  const [timeSlotEnd, setTimeSlotEnd] = useState('17:00');
+  const [timeSlotType, setTimeSlotType] = useState('both');
+  const [showAddTimeSlotModal, setShowAddTimeSlotModal] = useState(false);
+  const [requestStatusFilter, setRequestStatusFilter] = useState('all');
+  const [requestSearch, setRequestSearch] = useState('');
+  const handleLogout = () => { localStorage.clear(); window.location.href = '/login'; };
+
   useEffect(() => {
-    // Load counselor profile data
-    loadCounselorProfile();
+    // Load all counselor data
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [profileData, analyticsData, requests, sessions] = await Promise.all([
+          counselorAPI.getCounselorProfile(counselorId),
+          counselorAPI.getCounselorAnalytics(counselorId),
+          counselorDataAPI.getCounselingRequests(counselorId),
+          counselorDataAPI.getSessions(counselorId)
+        ]);
+        setProfile(profileData?.data || {});
+        setAnalytics(analyticsData?.data || {});
+        setCounselingRequests(requests || []);
+        setSessions(sessions || []);
+      } catch (error) {
+        alert('Failed to load counselor data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+    // Real-time updates
+    const socket = getSocket();
+    socket.on('counselingRequestUpdated', (request: CounselingRequest) => {
+      setCounselingRequests(prev => prev.map(r => r.id === request.id ? request : r));
+    });
+    socket.on('counselingRequestCreated', (request: CounselingRequest) => {
+      setCounselingRequests(prev => [request, ...prev]);
+    });
+    socket.on('sessionUpdated', (session: Session) => {
+      setSessions(prev => prev.map(s => s.id === session.id ? session : s));
+    });
+    socket.on('sessionCreated', (session: Session) => {
+      setSessions(prev => [session, ...prev]);
+    });
+    return () => {
+      socket.off('counselingRequestUpdated');
+      socket.off('counselingRequestCreated');
+      socket.off('sessionUpdated');
+      socket.off('sessionCreated');
+    };
   }, [counselorId]);
 
-  const loadCounselorProfile = async () => {
-    setLoading(true);
-    try {
-      // TODO: Replace with actual API call
-      // const response = await counselorAPI.getCounselorProfile(counselorId);
-      // setProfile(response.data);
-      
-      // Mock data for now
-      setProfile({
-        name: 'Dr. Meera Kapoor',
-        specialization: 'Pre-marital and Post-marital Counseling',
-        experience: 8,
-        counselingMethods: ['online', 'offline'],
-        availableCities: ['Mumbai', 'Delhi', 'Bangalore'],
-        sessionFees: 1500,
-        description: 'Experienced relationship counselor specializing in pre and post-marital counseling',
-        phone: '+91 98765 43210',
-        email: 'dr.meera@example.com',
-        rating: 4.8,
-        totalSessions: 45,
-        isVerified: true
-      });
-    } catch (error) {
-      console.error('Error loading counselor profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Update profile
   const handleUpdateProfile = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // await counselorAPI.updateProfile(profile);
+      await counselorAPI.updateCounselorProfile(counselorId, profile);
       setShowProfileForm(false);
       alert('Profile updated successfully!');
     } catch (error) {
@@ -225,25 +172,45 @@ const CounselorDashboard: React.FC = () => {
     }
   };
 
+  // Time slot CRUD
   const handleAddTimeSlot = async () => {
-    // TODO: Implement add time slot
-    setShowTimeSlotForm(false);
+    try {
+      const slot = await counselorAPI.addTimeSlot(counselorId, {
+        day: timeSlotDay,
+        startTime: timeSlotStart,
+        endTime: timeSlotEnd,
+        isAvailable: true,
+        sessionType: timeSlotType
+      });
+      setTimeSlots(prev => [...prev, slot]);
+      setShowAddTimeSlotModal(false);
+      setTimeSlotDay('Monday');
+      setTimeSlotStart('09:00');
+      setTimeSlotEnd('17:00');
+      setTimeSlotType('both');
+    } catch (error) {
+      alert('Failed to add time slot');
+    }
   };
 
+  // Requests
   const handleUpdateRequestStatus = async (requestId: string, status: CounselingRequest['status']) => {
-    setCounselingRequests(prev => 
-      prev.map(request => 
-        request.id === requestId ? { ...request, status } : request
-      )
-    );
+    try {
+      await counselorDataAPI.updateRequestStatus(counselorId, requestId, status);
+      setCounselingRequests(prev => prev.map(request => request.id === requestId ? { ...request, status } : request));
+    } catch (error) {
+      alert('Failed to update request status');
+    }
   };
 
+  // Sessions
   const handleUpdateSessionStatus = async (sessionId: string, status: Session['status']) => {
-    setSessions(prev => 
-      prev.map(session => 
-        session.id === sessionId ? { ...session, status } : session
-      )
-    );
+    try {
+      await counselorDataAPI.updateSessionStatus(counselorId, sessionId, status);
+      setSessions(prev => prev.map(session => session.id === sessionId ? { ...session, status } : session));
+    } catch (error) {
+      alert('Failed to update session status');
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -261,6 +228,12 @@ const CounselorDashboard: React.FC = () => {
       </span>
     );
   };
+
+  const filteredRequests = counselingRequests.filter(request => {
+    const statusMatch = requestStatusFilter === 'all' || request.status === requestStatusFilter;
+    const searchMatch = request.userName.toLowerCase().includes(requestSearch.toLowerCase()) || request.issue.toLowerCase().includes(requestSearch.toLowerCase());
+    return statusMatch && searchMatch;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -283,7 +256,7 @@ const CounselorDashboard: React.FC = () => {
                 <Settings className="w-4 h-4" />
                 Profile
               </button>
-              <button className="btn-outline flex items-center gap-2">
+              <button className="btn-outline flex items-center gap-2" onClick={handleLogout}>
                 <LogOut className="w-4 h-4" />
                 Logout
               </button>
@@ -410,13 +383,7 @@ const CounselorDashboard: React.FC = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">Manage Time Slots</h2>
-              <button
-                onClick={() => setShowTimeSlotForm(true)}
-                className="btn-primary flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Add Time Slot
-              </button>
+              <button onClick={() => setShowAddTimeSlotModal(true)} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" />Add Time Slot</button>
             </div>
 
             <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -468,6 +435,44 @@ const CounselorDashboard: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            {showAddTimeSlotModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Add Time Slot</h3>
+                    <button onClick={() => setShowAddTimeSlotModal(false)} className="text-gray-500 hover:text-gray-700"><X className="w-5 h-5" /></button>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Day</label>
+                      <select className="input-field" value={timeSlotDay} onChange={e => setTimeSlotDay(e.target.value)}>
+                        {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map(day => <option key={day} value={day}>{day}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                      <input type="time" className="input-field" value={timeSlotStart} onChange={e => setTimeSlotStart(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                      <input type="time" className="input-field" value={timeSlotEnd} onChange={e => setTimeSlotEnd(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Session Type</label>
+                      <select className="input-field" value={timeSlotType} onChange={e => setTimeSlotType(e.target.value)}>
+                        <option value="online">Online</option>
+                        <option value="offline">Offline</option>
+                        <option value="both">Both</option>
+                      </select>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <button onClick={handleAddTimeSlot} className="btn-primary flex-1">Add</button>
+                      <button onClick={() => setShowAddTimeSlotModal(false)} className="btn-outline flex-1">Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -476,18 +481,19 @@ const CounselorDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">Counseling Requests</h2>
               <div className="flex gap-2">
-                <select className="input-field">
+                <select className="input-field w-40" value={requestStatusFilter} onChange={e => setRequestStatusFilter(e.target.value)}>
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
                   <option value="accepted">Accepted</option>
                   <option value="completed">Completed</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
+                <input type="text" className="input-field flex-1" placeholder="Search requests..." value={requestSearch} onChange={e => setRequestSearch(e.target.value)} />
               </div>
             </div>
 
             <div className="space-y-4">
-              {counselingRequests.map(request => (
+              {filteredRequests.map(request => (
                 <div key={request.id} className="bg-white rounded-lg shadow p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>

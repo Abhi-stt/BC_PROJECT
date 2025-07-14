@@ -31,6 +31,13 @@ router.get('/:communityId/analytics', communityController.getCommunityAnalytics)
 // Members
 router.get('/:communityId/members', communityController.getCommunityMembers);
 
+// Matrimonial Profiles
+router.get('/:communityId/profiles', communityController.getMatrimonialProfiles);
+router.put('/:communityId/profiles/:profileId/status', communityController.updateProfileStatus);
+// Queries
+router.get('/:communityId/queries', communityController.getCommunityQueries);
+router.post('/:communityId/queries/:queryId/reply', communityController.replyToCommunityQuery);
+
 // Delete community (admin only)
 router.delete('/:communityId', communityController.deleteCommunity);
 

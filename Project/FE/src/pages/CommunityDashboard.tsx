@@ -20,6 +20,9 @@ import {
   MapPin
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { communityManagementAPI } from '../services/api';
+import { communityProfilesAPI } from '../services/api';
+import { getSocket } from '../services/api';
 
 interface CommunityMember {
   id: string;
@@ -51,6 +54,7 @@ interface CommunityQuery {
   message: string;
   status: 'unread' | 'read' | 'replied';
   createdAt: string;
+  reply?: string; // Added for replies
 }
 
 interface CommunityEvent {
@@ -87,147 +91,92 @@ const CommunityDashboard: React.FC = () => {
   });
 
   // Members state
-  const [members, setMembers] = useState<CommunityMember[]>([
-    {
-      id: '1',
-      name: 'Priya Sharma',
-      email: 'priya@example.com',
-      phone: '+91 98765 43210',
-      profileStatus: 'approved',
-      joinDate: '2024-01-01',
-      isActive: true
-    },
-    {
-      id: '2',
-      name: 'Rahul Patel',
-      email: 'rahul@example.com',
-      phone: '+91 87654 32109',
-      profileStatus: 'pending',
-      joinDate: '2024-01-15',
-      isActive: true
-    },
-    {
-      id: '3',
-      name: 'Meera Singh',
-      email: 'meera@example.com',
-      phone: '+91 76543 21098',
-      profileStatus: 'approved',
-      joinDate: '2023-12-20',
-      isActive: false
-    }
-  ]);
+  const [members, setMembers] = useState<CommunityMember[]>([]);
 
   // Matrimonial profiles state
-  const [matrimonialProfiles, setMatrimonialProfiles] = useState<MatrimonialProfile[]>([
-    {
-      id: '1',
-      userId: 'user1',
-      userName: 'Priya Sharma',
-      userEmail: 'priya@example.com',
-      age: 28,
-      profession: 'Software Engineer',
-      location: 'Mumbai',
-      status: 'pending',
-      submittedDate: '2024-01-15'
-    },
-    {
-      id: '2',
-      userId: 'user2',
-      userName: 'Rahul Patel',
-      userEmail: 'rahul@example.com',
-      age: 30,
-      profession: 'Doctor',
-      location: 'Delhi',
-      status: 'approved',
-      submittedDate: '2024-01-10'
-    }
-  ]);
+  const [matrimonialProfiles, setMatrimonialProfiles] = useState<MatrimonialProfile[]>([]);
 
   // Queries state
-  const [queries, setQueries] = useState<CommunityQuery[]>([
-    {
-      id: '1',
-      from: 'amit@example.com',
-      subject: 'Community Guidelines Question',
-      message: 'Hi, I would like to know more about the community guidelines and rules for profile approval.',
-      status: 'unread',
-      createdAt: '2024-01-15T09:00:00Z'
-    }
-  ]);
+  const [queries, setQueries] = useState<CommunityQuery[]>([]);
 
   // Events state
-  const [events, setEvents] = useState<CommunityEvent[]>([
-    {
-      id: '1',
-      title: 'Community Meet & Greet',
-      description: 'Monthly community gathering for members to meet and network',
-      date: '2024-02-15',
-      time: '18:00',
-      location: 'Community Center, Mumbai',
-      attendees: 45,
-      maxAttendees: 100,
-      status: 'upcoming'
-    },
-    {
-      id: '2',
-      title: 'Wedding Planning Workshop',
-      description: 'Workshop on traditional wedding planning and customs',
-      date: '2024-01-25',
-      time: '14:00',
-      location: 'Cultural Hall, Mumbai',
-      attendees: 78,
-      maxAttendees: 80,
-      status: 'upcoming'
-    }
-  ]);
+  const [events, setEvents] = useState<CommunityEvent[]>([]);
 
   // Analytics state
   const [analytics, setAnalytics] = useState({
-    totalMembers: 1250,
-    activeMembers: 890,
-    totalMatches: 156,
-    successfulMatches: 89,
-    pendingProfiles: 23,
-    totalEvents: 12,
-    monthlyGrowth: 8
+    totalMembers: 0,
+    activeMembers: 0,
+    totalMatches: 0,
+    successfulMatches: 0,
+    pendingProfiles: 0,
+    totalEvents: 0,
+    monthlyGrowth: 0
   });
 
+  const [memberStatusFilter, setMemberStatusFilter] = useState('all');
+  const [memberSearch, setMemberSearch] = useState('');
+  const [selectedMember, setSelectedMember] = useState<CommunityMember | null>(null);
+  const [profileStatusFilter, setProfileStatusFilter] = useState('all');
+  const [profileSearch, setProfileSearch] = useState('');
+  const [selectedProfile, setSelectedProfile] = useState<MatrimonialProfile | null>(null);
+  const [queryStatusFilter, setQueryStatusFilter] = useState('all');
+  const [querySearch, setQuerySearch] = useState('');
+  const [replyingQuery, setReplyingQuery] = useState<CommunityQuery | null>(null);
+  const [replyText, setReplyText] = useState('');
+
   useEffect(() => {
-    // Load community profile data
-    loadCommunityProfile();
+    // Load all community data
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [profileData, analyticsData, membersData, eventsData, profiles, queriesData] = await Promise.all([
+          communityManagementAPI.getCommunityProfile(communityId),
+          communityManagementAPI.getCommunityAnalytics(communityId),
+          communityManagementAPI.getCommunityMembers(communityId),
+          communityManagementAPI.getCommunityProfile(communityId), // events are part of profile
+          communityProfilesAPI.getMatrimonialProfiles(communityId),
+          communityProfilesAPI.getCommunityQueries(communityId)
+        ]);
+        setProfile(profileData?.data || {});
+        setAnalytics(analyticsData?.data || {});
+        setMembers(membersData?.data || []);
+        setEvents(profileData?.data?.events || []);
+        setMatrimonialProfiles(profiles || []);
+        setQueries(queriesData || []);
+      } catch (error) {
+        alert('Failed to load community data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+    // Real-time updates
+    const socket = getSocket();
+    socket.on('communityMemberUpdated', (member: CommunityMember) => {
+      setMembers(prev => prev.map(m => m.id === member.id ? member : m));
+    });
+    socket.on('communityMemberCreated', (member: CommunityMember) => {
+      setMembers(prev => [member, ...prev]);
+    });
+    socket.on('communityEventUpdated', (event: CommunityEvent) => {
+      setEvents(prev => prev.map(e => e.id === event.id ? event : e));
+    });
+    socket.on('communityEventCreated', (event: CommunityEvent) => {
+      setEvents(prev => [event, ...prev]);
+    });
+    return () => {
+      socket.off('communityMemberUpdated');
+      socket.off('communityMemberCreated');
+      socket.off('communityEventUpdated');
+      socket.off('communityEventCreated');
+    };
   }, [communityId]);
 
-  const loadCommunityProfile = async () => {
-    setLoading(true);
-    try {
-      // TODO: Replace with actual API call
-      // const response = await communityAPI.getCommunityProfile(communityId);
-      // setProfile(response.data);
-      
-      // Mock data for now
-      setProfile({
-        communityName: 'Mumbai Hindu Community',
-        religion: 'Hindu',
-        region: 'Maharashtra',
-        rules: 'Members must follow traditional values and respect community guidelines',
-        description: 'A vibrant community dedicated to preserving cultural values and helping members find life partners',
-        totalMembers: 1250,
-        activeMembers: 890,
-        totalMatches: 156,
-        isVerified: true
-      });
-    } catch (error) {
-      console.error('Error loading community profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Update profile
   const handleUpdateProfile = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // await communityAPI.updateProfile(profile);
+      await communityManagementAPI.updateCommunityProfile(communityId, profile);
       setShowProfileForm(false);
       alert('Profile updated successfully!');
     } catch (error) {
@@ -238,33 +187,45 @@ const CommunityDashboard: React.FC = () => {
     }
   };
 
+  // Event CRUD
   const handleAddEvent = async () => {
-    // TODO: Implement add event
-    setShowEventForm(false);
+    try {
+      // TODO: Replace with real event data
+      await communityManagementAPI.addEvent(communityId, {});
+      setShowEventForm(false);
+    } catch (error) {
+      alert('Failed to add event');
+    }
   };
 
+  // Member status
   const handleUpdateMemberStatus = async (memberId: string, status: CommunityMember['profileStatus']) => {
-    setMembers(prev => 
-      prev.map(member => 
-        member.id === memberId ? { ...member, profileStatus: status } : member
-      )
-    );
+    try {
+      // TODO: Replace with real API call if available
+      setMembers(prev => prev.map(member => member.id === memberId ? { ...member, profileStatus: status } : member));
+    } catch (error) {
+      alert('Failed to update member status');
+    }
   };
 
+  // Matrimonial profile status
   const handleUpdateProfileStatus = async (profileId: string, status: MatrimonialProfile['status']) => {
-    setMatrimonialProfiles(prev => 
-      prev.map(profile => 
-        profile.id === profileId ? { ...profile, status } : profile
-      )
-    );
+    try {
+      await communityProfilesAPI.updateProfileStatus(communityId, profileId, status);
+      setMatrimonialProfiles(prev => prev.map(profile => profile.id === profileId ? { ...profile, status } : profile));
+    } catch (error) {
+      alert('Failed to update profile status');
+    }
   };
 
+  // Queries
   const handleReplyToQuery = async (queryId: string, reply: string) => {
-    setQueries(prev => 
-      prev.map(query => 
-        query.id === queryId ? { ...query, status: 'replied' } : query
-      )
-    );
+    try {
+      await communityProfilesAPI.replyToCommunityQuery(communityId, queryId, reply);
+      setQueries(prev => prev.map(query => query.id === queryId ? { ...query, status: 'replied', reply } : query));
+    } catch (error) {
+      alert('Failed to reply to query');
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -287,6 +248,27 @@ const CommunityDashboard: React.FC = () => {
     );
   };
 
+  const filteredMembers = members.filter(member => {
+    const statusMatch = memberStatusFilter === 'all' || member.profileStatus === memberStatusFilter;
+    const searchMatch = member.name.toLowerCase().includes(memberSearch.toLowerCase()) || member.email.toLowerCase().includes(memberSearch.toLowerCase());
+    return statusMatch && searchMatch;
+  });
+  const filteredProfiles = matrimonialProfiles.filter(profile => {
+    const statusMatch = profileStatusFilter === 'all' || profile.status === profileStatusFilter;
+    const searchMatch = profile.userName.toLowerCase().includes(profileSearch.toLowerCase()) || profile.userEmail.toLowerCase().includes(profileSearch.toLowerCase());
+    return statusMatch && searchMatch;
+  });
+  const filteredQueries = queries.filter(query => {
+    const statusMatch = queryStatusFilter === 'all' || query.status === queryStatusFilter;
+    const searchMatch = query.subject.toLowerCase().includes(querySearch.toLowerCase()) || query.message.toLowerCase().includes(querySearch.toLowerCase());
+    return statusMatch && searchMatch;
+  });
+  const handleOpenMemberDetails = (member: CommunityMember) => setSelectedMember(member);
+  const handleOpenProfileView = (profile: MatrimonialProfile) => setSelectedProfile(profile);
+  const handleOpenReplyModal = (query: CommunityQuery) => { setReplyingQuery(query); setReplyText(''); };
+  const handleSendReply = () => { if (!replyText.trim()) { alert('Please enter a reply message'); return; } setQueries(prev => prev.map(q => q.id === replyingQuery?.id ? { ...q, status: 'replied', reply: replyText } : q)); setReplyingQuery(null); setReplyText(''); };
+  const handleLogout = () => { localStorage.clear(); window.location.href = '/login'; };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -308,7 +290,7 @@ const CommunityDashboard: React.FC = () => {
                 <Settings className="w-4 h-4" />
                 Profile
               </button>
-              <button className="btn-outline flex items-center gap-2">
+              <button className="btn-outline flex items-center gap-2" onClick={handleLogout}>
                 <LogOut className="w-4 h-4" />
                 Logout
               </button>
@@ -437,15 +419,15 @@ const CommunityDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">Community Members</h2>
               <div className="flex gap-2">
-                <select className="input-field">
+                <select className="input-field w-40" value={memberStatusFilter} onChange={e => setMemberStatusFilter(e.target.value)}>
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
                   <option value="approved">Approved</option>
                   <option value="rejected">Rejected</option>
                 </select>
+                <input type="text" className="input-field flex-1" placeholder="Search members..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} />
               </div>
             </div>
-
             <div className="bg-white rounded-lg shadow overflow-hidden">
               <table className="w-full">
                 <thead className="bg-gray-50">
@@ -458,7 +440,7 @@ const CommunityDashboard: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {members.map(member => (
+                  {filteredMembers.map(member => (
                     <tr key={member.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div className="font-medium text-gray-900">{member.name}</div>
@@ -501,6 +483,7 @@ const CommunityDashboard: React.FC = () => {
                               </button>
                             </>
                           )}
+                          <button className="btn-primary text-xs" onClick={() => handleOpenMemberDetails(member)}>View Details</button>
                         </div>
                       </td>
                     </tr>
@@ -508,6 +491,25 @@ const CommunityDashboard: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            {/* Member Details Modal */}
+            {selectedMember && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Member Details</h3>
+                    <button onClick={() => setSelectedMember(null)} className="text-gray-500 hover:text-gray-700"><X className="w-5 h-5" /></button>
+                  </div>
+                  <div className="space-y-2">
+                    <div><strong>Name:</strong> {selectedMember.name}</div>
+                    <div><strong>Email:</strong> {selectedMember.email}</div>
+                    <div><strong>Phone:</strong> {selectedMember.phone}</div>
+                    <div><strong>Status:</strong> {selectedMember.profileStatus}</div>
+                    <div><strong>Join Date:</strong> {new Date(selectedMember.joinDate).toLocaleDateString()}</div>
+                    <div><strong>Active:</strong> {selectedMember.isActive ? 'Yes' : 'No'}</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -516,17 +518,17 @@ const CommunityDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">Matrimonial Profiles</h2>
               <div className="flex gap-2">
-                <select className="input-field">
+                <select className="input-field w-40" value={profileStatusFilter} onChange={e => setProfileStatusFilter(e.target.value)}>
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
                   <option value="approved">Approved</option>
                   <option value="rejected">Rejected</option>
                 </select>
+                <input type="text" className="input-field flex-1" placeholder="Search profiles..." value={profileSearch} onChange={e => setProfileSearch(e.target.value)} />
               </div>
             </div>
-
             <div className="space-y-4">
-              {matrimonialProfiles.map(profile => (
+              {filteredProfiles.map(profile => (
                 <div key={profile.id} className="bg-white rounded-lg shadow p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-4">
@@ -550,11 +552,8 @@ const CommunityDashboard: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button className="text-blue-600 hover:text-blue-900">
-                      <Eye className="w-4 h-4 mr-1" />
-                      View Profile
-                    </button>
+                  <div className="flex gap-2 mt-2">
+                    <button className="btn-primary text-xs" onClick={() => handleOpenProfileView(profile)}>View Profile</button>
                     {profile.status === 'pending' && (
                       <>
                         <button
@@ -577,6 +576,26 @@ const CommunityDashboard: React.FC = () => {
                 </div>
               ))}
             </div>
+            {/* Profile View Modal */}
+            {selectedProfile && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Profile Details</h3>
+                    <button onClick={() => setSelectedProfile(null)} className="text-gray-500 hover:text-gray-700"><X className="w-5 h-5" /></button>
+                  </div>
+                  <div className="space-y-2">
+                    <div><strong>Name:</strong> {selectedProfile.userName}</div>
+                    <div><strong>Email:</strong> {selectedProfile.userEmail}</div>
+                    <div><strong>Age:</strong> {selectedProfile.age}</div>
+                    <div><strong>Profession:</strong> {selectedProfile.profession}</div>
+                    <div><strong>Location:</strong> {selectedProfile.location}</div>
+                    <div><strong>Status:</strong> {selectedProfile.status}</div>
+                    <div><strong>Submitted:</strong> {new Date(selectedProfile.submittedDate).toLocaleDateString()}</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -585,17 +604,17 @@ const CommunityDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">Community Queries</h2>
               <div className="flex gap-2">
-                <select className="input-field">
+                <select className="input-field w-40" value={queryStatusFilter} onChange={e => setQueryStatusFilter(e.target.value)}>
                   <option value="all">All Queries</option>
                   <option value="unread">Unread</option>
                   <option value="read">Read</option>
                   <option value="replied">Replied</option>
                 </select>
+                <input type="text" className="input-field flex-1" placeholder="Search queries..." value={querySearch} onChange={e => setQuerySearch(e.target.value)} />
               </div>
             </div>
-
             <div className="space-y-4">
-              {queries.map(query => (
+              {filteredQueries.map(query => (
                 <div key={query.id} className="bg-white rounded-lg shadow p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -610,13 +629,37 @@ const CommunityDashboard: React.FC = () => {
                     </div>
                   </div>
                   <p className="text-gray-700 mb-4">{query.message}</p>
-                  <div className="flex gap-2">
-                    <button className="btn-primary text-sm">Reply</button>
-                    <button className="btn-outline text-sm">Mark as Read</button>
+                  <div className="flex gap-2 mt-2">
+                    <button className="btn-primary text-xs" onClick={() => handleOpenReplyModal(query)}>Reply</button>
+                    <button className="btn-outline text-xs" onClick={() => setQueries(prev => prev.map(q => q.id === query.id ? { ...q, status: 'read' } : q))}>Mark as Read</button>
                   </div>
+                  {query.reply && (
+                    <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-700"><strong>Reply:</strong> {query.reply}</div>
+                  )}
                 </div>
               ))}
             </div>
+            {/* Reply Modal */}
+            {replyingQuery && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Reply to Query</h3>
+                    <button onClick={() => setReplyingQuery(null)} className="text-gray-500 hover:text-gray-700"><X className="w-5 h-5" /></button>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Reply Message</label>
+                      <textarea value={replyText} onChange={e => setReplyText(e.target.value)} className="input-field h-24" />
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <button onClick={handleSendReply} className="btn-primary flex-1">Send Reply</button>
+                      <button onClick={() => setReplyingQuery(null)} className="btn-outline flex-1">Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

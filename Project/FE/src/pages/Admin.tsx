@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminStats, samplePosts, reportedContent, analyticsData, notifications, announcements } from '../data/sampleData';
-import { adminAPI, getSocket, userAPI, supportAPI, vendorAPI, requestAPI, emailAPI } from '../services/api';
+import { adminAPI, getSocket, userAPI, supportAPI, vendorAPI, requestAPI, emailAPI, counselorAPI, communityManagementAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   Users, 
@@ -422,13 +422,12 @@ const Admin: React.FC = () => {
 
   const fetchApprovedRoles = () => {
     setError(null);
-    
-    // Fetch all approved vendors, counselors, and communities
     Promise.all([
       vendorAPI.getAllVendors(),
-      // Add counselor and community APIs when they're created
+      counselorAPI.getAllCounselors(),
+      communityManagementAPI.getAllCommunities()
     ])
-      .then(([vendorsData]) => {
+      .then(([vendorsData, counselorsData, communitiesData]) => {
         const allRoles = [
           ...vendorsData.map((v: any) => ({
             ...v,
@@ -449,9 +448,41 @@ const Admin: React.FC = () => {
               email: v.userId.email,
               phone: v.userId.phone
             } : null
+          })),
+          ...((Array.isArray(counselorsData?.data) ? counselorsData.data : [])).map((c: any) => ({
+            ...c,
+            id: c._id,
+            roleType: 'counselor',
+            specialization: c.specialization || '',
+            experience: c.experience || 0,
+            status: c.status || 'active',
+            isVerified: c.isVerified || false,
+            createdAt: c.createdAt,
+            user: c.userId ? {
+              id: c.userId._id,
+              name: c.userId.name,
+              email: c.userId.email,
+              phone: c.userId.phone
+            } : null
+          })),
+          ...((Array.isArray(communitiesData?.data) ? communitiesData.data : [])).map((comm: any) => ({
+            ...comm,
+            id: comm._id,
+            roleType: 'community',
+            communityName: comm.communityName || '',
+            religion: comm.religion || '',
+            region: comm.region || '',
+            status: comm.status || 'active',
+            isVerified: comm.isVerified || false,
+            createdAt: comm.createdAt,
+            user: comm.userId ? {
+              id: comm.userId._id,
+              name: comm.userId.name,
+              email: comm.userId.email,
+              phone: comm.userId.phone
+            } : null
           }))
         ];
-        
         setApprovedRoles(allRoles);
       })
       .catch(err => {
@@ -1080,32 +1111,23 @@ const Admin: React.FC = () => {
       if (action === 'approve') {
         const result = await vendorAPI.approveVendorRequest(requestId, approvalData);
         showSuccess(`Vendor request approved. Temporary password: ${result.tempPassword}`);
-        
         // Clear approval modal
         setShowApprovalModal(null);
-        setApprovalData({
-          businessName: '',
-          services: [],
-          city: '',
-          location: ''
-        });
-        
+        setApprovalData({ businessName: '', services: [], city: '', location: '' });
         // Refresh data
-        fetchApprovedRoles();
-        fetchVendors();
-        
+        await fetchApprovedRoles();
+        await fetchVendorRequests();
+        await fetchVendors();
       } else if (action === 'reject') {
         await vendorAPI.rejectVendorRequest(requestId, rejectionReason);
         showSuccess('Vendor request rejected');
-        
         // Clear rejection modal
         setShowRejectionModal(null);
         setRejectionReason('');
-        
-        // Refresh requests
-        fetchApprovedRoles();
+        // Refresh data
+        await fetchApprovedRoles();
+        await fetchVendorRequests();
       }
-      
     } catch (err: any) {
       setError(err.message || `Failed to ${action} vendor request`);
       console.error(`Error ${action}ing vendor request:`, err);
@@ -1118,7 +1140,6 @@ const Admin: React.FC = () => {
     setLoading(true);
     setError(null);
     console.log(`🔄 Starting ${action} process for request:`, requestId);
-    
     try {
       if (action === 'approve') {
         console.log('📧 Calling approveRequest API...');
@@ -1134,12 +1155,11 @@ const Admin: React.FC = () => {
         setShowRoleRejectionModal(null);
         setRejectionReason('');
       }
-      
       console.log('🔄 Refreshing data...');
       await fetchApprovedRoles();
-      setRoleRequests([]);
+      await fetchVendorRequests();
+      // Do not clear setRoleRequests([]); let it update from fetch
       console.log('✅ Data refresh completed');
-      
     } catch (err: any) {
       console.error(`❌ Error ${action}ing role application:`, err);
       setError(err.message || `Failed to ${action} role application`);
@@ -1883,129 +1903,148 @@ const Admin: React.FC = () => {
               </div>
             </div>
 
-            {approvedRoles.length === 0 ? (
-              <div className="text-center text-gray-400">No approved roles found.</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Role
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Details
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Contact
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {approvedRoles.map(role => (
-                      <tr key={role.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                {role.roleType === 'vendor' ? role.businessName : 
-                                 role.roleType === 'counselor' ? role.specialization : 
-                                 role.communityName}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {role.user?.name} • {role.user?.email}
-                              </div>
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                role.roleType === 'vendor' ? 'bg-blue-100 text-blue-800' :
-                                role.roleType === 'counselor' ? 'bg-purple-100 text-purple-800' :
-                                'bg-green-100 text-green-800'
-                              }`}>
-                                {role.roleType.charAt(0).toUpperCase() + role.roleType.slice(1)}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">
-                            {role.roleType === 'vendor' && (
-                              <div className="flex flex-wrap gap-1">
-                                {role.services.slice(0, 3).map((service: string, index: number) => (
-                                  <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                                    {service}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            {role.roleType === 'counselor' && (
-                              <div>
-                                <div className="text-sm">{role.specialization}</div>
-                                <div className="text-xs text-gray-500">{role.experience} years experience</div>
-                              </div>
-                            )}
-                            {role.roleType === 'community' && (
-                              <div>
-                                <div className="text-sm">{role.religion}</div>
-                                <div className="text-xs text-gray-500">{role.region}</div>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {role.user?.phone}
-                        </td>
-                        <td className="px-6 py-4">
-                          {getStatusBadge(role.status)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => setShowVendorDetails(role.id)}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="View Details"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => window.open(`/app/${role.roleType}/${role.id}`, '_blank')}
-                              className="text-green-600 hover:text-green-900"
-                              title="View Dashboard"
-                            >
-                              <Users className="w-4 h-4" />
-                            </button>
-                            {role.status === 'active' && (
-                              <button
-                                onClick={() => handleVendorAction(role.id, 'suspend')}
-                                className="text-yellow-600 hover:text-yellow-900"
-                                title="Suspend"
-                                disabled={loading}
-                              >
-                                <Ban className="w-4 h-4" />
-                              </button>
-                            )}
-                            {role.status === 'suspended' && (
-                              <button
-                                onClick={() => handleVendorAction(role.id, 'activate')}
-                                className="text-green-600 hover:text-green-900"
-                                title="Activate"
-                                disabled={loading}
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
+            {/* Filter roles by type and search */}
+            {(() => {
+              const filteredRoles = approvedRoles.filter(role => {
+                const matchesType = roleFilter === 'all' || role.roleType === roleFilter;
+                const matchesSearch =
+                  (role.roleType === 'vendor' && role.businessName?.toLowerCase().includes(roleSearchTerm.toLowerCase())) ||
+                  (role.roleType === 'counselor' && role.specialization?.toLowerCase().includes(roleSearchTerm.toLowerCase())) ||
+                  (role.roleType === 'community' && role.communityName?.toLowerCase().includes(roleSearchTerm.toLowerCase()));
+                return matchesType && matchesSearch;
+              });
+              return filteredRoles.length === 0 ? (
+                <div className="text-center text-gray-400">No approved roles found.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Role
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Details
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Contact
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredRoles.map(role => (
+                        <tr key={role.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {role.roleType === 'vendor' ? role.businessName : 
+                                   role.roleType === 'counselor' ? role.specialization : 
+                                   role.communityName}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {role.user?.name} • {role.user?.email}
+                                </div>
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  role.roleType === 'vendor' ? 'bg-blue-100 text-blue-800' :
+                                  role.roleType === 'counselor' ? 'bg-purple-100 text-purple-800' :
+                                  'bg-green-100 text-green-800'
+                                }`}>
+                                  {role.roleType.charAt(0).toUpperCase() + role.roleType.slice(1)}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900">
+                              {role.roleType === 'vendor' && (
+                                <div className="flex flex-wrap gap-1">
+                                  {role.services?.slice(0, 3).map((service: string, index: number) => (
+                                    <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                                      {service}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {role.roleType === 'counselor' && (
+                                <div>
+                                  <div className="text-sm">{role.specialization}</div>
+                                  <div className="text-xs text-gray-500">{role.experience} years experience</div>
+                                </div>
+                              )}
+                              {role.roleType === 'community' && (
+                                <div>
+                                  <div className="text-sm">{role.religion}</div>
+                                  <div className="text-xs text-gray-500">{role.region}</div>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {role.user?.phone}
+                          </td>
+                          <td className="px-6 py-4">
+                            {getStatusBadge(role.status)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => setShowVendorDetails(role.id)}
+                                className="text-blue-600 hover:text-blue-900"
+                                title="View Details"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (role.roleType === 'vendor') {
+                                    window.open(`/vendor/dashboard?vendorId=${role.id}`, '_blank');
+                                  } else if (role.roleType === 'counselor') {
+                                    window.open(`/app/counselor/${role.id}`, '_blank');
+                                  } else if (role.roleType === 'community') {
+                                    window.open(`/app/community/${role.id}`, '_blank');
+                                  }
+                                }}
+                                className="text-green-600 hover:text-green-900"
+                                title="View Dashboard"
+                              >
+                                <Users className="w-4 h-4" />
+                              </button>
+                              {role.status === 'active' && (
+                                <button
+                                  onClick={() => handleVendorAction(role.id, 'suspend')}
+                                  className="text-yellow-600 hover:text-yellow-900"
+                                  title="Suspend"
+                                  disabled={loading}
+                                >
+                                  <Ban className="w-4 h-4" />
+                                </button>
+                              )}
+                              {role.status === 'suspended' && (
+                                <button
+                                  onClick={() => handleVendorAction(role.id, 'activate')}
+                                  className="text-green-600 hover:text-green-900"
+                                  title="Activate"
+                                  disabled={loading}
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

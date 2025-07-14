@@ -679,6 +679,88 @@ export const vendorAPI = {
       console.error('Error fetching vendor analytics:', error);
       throw new Error('Failed to fetch vendor analytics');
     }
+  },
+
+  // Service Packages
+  getServicePackages: async () => {
+    try {
+      const response = await api.get('/vendors/profile');
+      // Assume packages are part of the profile
+      return response.data.packages || [];
+    } catch (error) {
+      console.warn('Backend not available, using mock service packages');
+      const { sampleVendorPackages } = await import('../data/sampleData');
+      return sampleVendorPackages;
+    }
+  },
+  addServicePackage: async (pkg: any) => {
+    try {
+      const response = await api.post('/vendors/profile/packages', pkg);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, simulating add package');
+      return { ...pkg, id: Date.now().toString() };
+    }
+  },
+  updateServicePackage: async (pkgId: string, pkg: any) => {
+    try {
+      const response = await api.put(`/vendors/profile/packages/${pkgId}`, pkg);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, simulating update package');
+      return { ...pkg, id: pkgId };
+    }
+  },
+  deleteServicePackage: async (pkgId: string) => {
+    try {
+      const response = await api.delete(`/vendors/profile/packages/${pkgId}`);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, simulating delete package');
+      return { success: true };
+    }
+  },
+
+  // Client Leads
+  getClientLeads: async () => {
+    try {
+      const response = await api.get('/vendors/profile/leads');
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, using mock client leads');
+      const { sampleVendorLeads } = await import('../data/sampleData');
+      return sampleVendorLeads;
+    }
+  },
+  updateLeadStatus: async (leadId: string, status: string) => {
+    try {
+      const response = await api.put(`/vendors/profile/leads/${leadId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, simulating update lead status');
+      return { id: leadId, status };
+    }
+  },
+
+  // Queries
+  getQueries: async () => {
+    try {
+      const response = await api.get('/vendors/profile/queries');
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, using mock queries');
+      const { sampleVendorQueries } = await import('../data/sampleData');
+      return sampleVendorQueries;
+    }
+  },
+  replyToQuery: async (queryId: string, reply: string) => {
+    try {
+      const response = await api.post(`/vendors/profile/queries/${queryId}/reply`, { reply });
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, simulating reply to query');
+      return { id: queryId, reply, status: 'replied' };
+    }
   }
 };
 

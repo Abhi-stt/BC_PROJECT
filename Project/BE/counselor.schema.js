@@ -89,6 +89,31 @@ const counselorSchema = new mongoose.Schema({
       default: 'both'
     }
   }],
+  // Add counselingRequests subdocument
+  counselingRequests: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    userName: String,
+    userEmail: String,
+    userPhone: String,
+    issue: String,
+    preferredTime: String,
+    sessionType: { type: String, enum: ['online', 'offline'] },
+    status: { type: String, enum: ['pending', 'accepted', 'completed', 'cancelled'], default: 'pending' },
+    createdAt: { type: Date, default: Date.now }
+  }],
+  // Add sessions subdocument
+  sessions: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    userName: String,
+    date: String,
+    time: String,
+    duration: Number,
+    sessionType: { type: String, enum: ['online', 'offline'] },
+    status: { type: String, enum: ['scheduled', 'completed', 'cancelled'], default: 'scheduled' },
+    notes: String,
+    rating: Number,
+    feedback: String
+  }],
   totalEarnings: {
     type: Number,
     default: 0

@@ -177,7 +177,7 @@ const approveVendorRequest = async (req, res) => {
         id: user._id,
         tempPassword // include temp password for email
       };
-      const dashboardUrl = `${process.env.FRONTEND_URL || 'https://bc-project-pbiz.vercel.app'}/app/vendor/${user._id}`;
+      const dashboardUrl = `${process.env.FRONTEND_URL || 'https://bc-project-pbiz.vercel.app'}/vendor/dashboard`;
       await emailService.sendEmail(
         userData.email,
         'roleApplicationApproved',
@@ -319,6 +319,98 @@ const getVendorAnalytics = async (req, res) => {
   }
 };
 
+// --- Service Packages ---
+// Add a service package
+const addServicePackage = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    vendor.packages.push(req.body);
+    await vendor.save();
+    const newPackage = vendor.packages[vendor.packages.length - 1];
+    res.status(201).json(newPackage);
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding package' });
+  }
+};
+// Update a service package
+const updateServicePackage = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    const pkg = vendor.packages.id(req.params.packageId);
+    if (!pkg) return res.status(404).json({ message: 'Package not found' });
+    Object.assign(pkg, req.body);
+    await vendor.save();
+    res.json(pkg);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating package' });
+  }
+};
+// Delete a service package
+const deleteServicePackage = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    vendor.packages.id(req.params.packageId).remove();
+    await vendor.save();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting package' });
+  }
+};
+// --- Leads ---
+// Get all leads
+const getClientLeads = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    res.json(vendor.leads || []);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching leads' });
+  }
+};
+// Update lead status
+const updateLeadStatus = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    const lead = vendor.leads.id(req.params.leadId);
+    if (!lead) return res.status(404).json({ message: 'Lead not found' });
+    lead.status = req.body.status;
+    await vendor.save();
+    res.json(lead);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating lead status' });
+  }
+};
+// --- Queries ---
+// Get all queries
+const getQueries = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    res.json(vendor.queries || []);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching queries' });
+  }
+};
+// Reply to a query
+const replyToQuery = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    const query = vendor.queries.id(req.params.queryId);
+    if (!query) return res.status(404).json({ message: 'Query not found' });
+    query.reply = req.body.reply;
+    query.status = 'replied';
+    await vendor.save();
+    res.json(query);
+  } catch (error) {
+    res.status(500).json({ message: 'Error replying to query' });
+  }
+};
+
 module.exports = {
   getAllVendors,
   getVendorById,
@@ -328,5 +420,12 @@ module.exports = {
   approveVendorRequest,
   rejectVendorRequest,
   updateVendorStatus,
-  getVendorAnalytics
+  getVendorAnalytics,
+  addServicePackage,
+  updateServicePackage,
+  deleteServicePackage,
+  getClientLeads,
+  updateLeadStatus,
+  getQueries,
+  replyToQuery
 }; 

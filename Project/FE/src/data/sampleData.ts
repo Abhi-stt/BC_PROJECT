@@ -345,3 +345,54 @@ export const announcements = [
     targetAudience: 'free_users'
   }
 ];
+
+export const sampleVendorPackages = [
+  {
+    id: '1',
+    title: 'Basic Wedding Package',
+    description: 'Essential wedding services including photography and basic decoration',
+    price: 50000,
+    isActive: true
+  },
+  {
+    id: '2',
+    title: 'Premium Wedding Package',
+    description: 'Complete wedding services with premium photography, decoration, and catering',
+    price: 150000,
+    isActive: true
+  }
+];
+
+export const sampleVendorLeads = [
+  {
+    id: '1',
+    name: 'Priya Sharma',
+    email: 'priya@example.com',
+    phone: '+91 98765 43210',
+    service: 'Wedding Photography',
+    message: 'Looking for wedding photography services for my wedding in December',
+    status: 'new',
+    createdAt: '2024-01-15T10:30:00Z'
+  },
+  {
+    id: '2',
+    name: 'Rahul Patel',
+    email: 'rahul@example.com',
+    phone: '+91 87654 32109',
+    service: 'Wedding Decoration',
+    message: 'Need decoration services for reception venue',
+    status: 'contacted',
+    createdAt: '2024-01-14T15:45:00Z'
+  }
+];
+
+export const sampleVendorQueries = [
+  {
+    id: '1',
+    from: 'amit@example.com',
+    subject: 'Wedding Photography Inquiry',
+    message: 'Hi, I would like to know more about your wedding photography packages and availability.',
+    status: 'unread',
+    createdAt: '2024-01-15T09:00:00Z'
+  }
+];

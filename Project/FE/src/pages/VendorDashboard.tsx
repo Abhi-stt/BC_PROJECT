@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { 
   Building, 
   Package, 
@@ -20,9 +20,14 @@ import {
   TrendingUp,
   Heart,
   CheckCircle,
-  X
+  X,
+  FileText,
+  Award,
+  HelpCircle
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { vendorAPI } from '../services/api';
+import { getSocket } from '../services/api';
 
 interface ServicePackage {
   id: string;
@@ -50,15 +55,21 @@ interface Query {
   message: string;
   status: 'unread' | 'read' | 'replied';
   createdAt: string;
+  reply?: string; // Added for replies
 }
 
 const VendorDashboard: React.FC = () => {
-  const { vendorId } = useParams<{ vendorId: string }>();
+  const location = useLocation();
+  const { vendorId: paramVendorId } = useParams<{ vendorId: string }>();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Support admin viewing any vendor dashboard
+  const searchParams = new URLSearchParams(location.search);
+  const vendorId = searchParams.get('vendorId') || paramVendorId || user?.id;
 
   // Profile state
   const [profile, setProfile] = useState({
@@ -76,107 +87,93 @@ const VendorDashboard: React.FC = () => {
   });
 
   // Service packages state
-  const [servicePackages, setServicePackages] = useState<ServicePackage[]>([
-    {
-      id: '1',
-      title: 'Basic Wedding Package',
-      description: 'Essential wedding services including photography and basic decoration',
-      price: 50000,
-      isActive: true
-    },
-    {
-      id: '2',
-      title: 'Premium Wedding Package',
-      description: 'Complete wedding services with premium photography, decoration, and catering',
-      price: 150000,
-      isActive: true
-    }
-  ]);
+  const [servicePackages, setServicePackages] = useState<ServicePackage[]>([]);
 
   // Client leads state
-  const [clientLeads, setClientLeads] = useState<ClientLead[]>([
-    {
-      id: '1',
-      name: 'Priya Sharma',
-      email: 'priya@example.com',
-      phone: '+91 98765 43210',
-      service: 'Wedding Photography',
-      message: 'Looking for wedding photography services for my wedding in December',
-      status: 'new',
-      createdAt: '2024-01-15T10:30:00Z'
-    },
-    {
-      id: '2',
-      name: 'Rahul Patel',
-      email: 'rahul@example.com',
-      phone: '+91 87654 32109',
-      service: 'Wedding Decoration',
-      message: 'Need decoration services for reception venue',
-      status: 'contacted',
-      createdAt: '2024-01-14T15:45:00Z'
-    }
-  ]);
+  const [clientLeads, setClientLeads] = useState<ClientLead[]>([]);
 
   // Queries state
-  const [queries, setQueries] = useState<Query[]>([
-    {
-      id: '1',
-      from: 'amit@example.com',
-      subject: 'Wedding Photography Inquiry',
-      message: 'Hi, I would like to know more about your wedding photography packages and availability.',
-      status: 'unread',
-      createdAt: '2024-01-15T09:00:00Z'
-    }
-  ]);
+  const [queries, setQueries] = useState<Query[]>([]);
 
   // Analytics state
   const [analytics, setAnalytics] = useState({
-    totalLeads: 25,
-    convertedLeads: 8,
-    totalRevenue: 750000,
-    averageRating: 4.5,
-    totalBookings: 12,
-    monthlyGrowth: 15
+    totalLeads: 0,
+    convertedLeads: 0,
+    totalRevenue: 0,
+    averageRating: 0,
+    totalBookings: 0,
+    monthlyGrowth: 0
   });
 
+  const [newPackage, setNewPackage] = useState({
+    title: '',
+    description: '',
+    price: '',
+    isActive: true
+  });
+  const [showAddPackageModal, setShowAddPackageModal] = useState(false);
+  const [packageStatusFilter, setPackageStatusFilter] = useState('all');
+  const [packageSearch, setPackageSearch] = useState('');
+  const [editPackage, setEditPackage] = useState<ServicePackage | null>(null);
+  const [showEditPackageModal, setShowEditPackageModal] = useState(false);
+  const [deletePackageId, setDeletePackageId] = useState<string | null>(null);
+
+  const [queryStatusFilter, setQueryStatusFilter] = useState('all');
+  const [querySearch, setQuerySearch] = useState('');
+  const [replyingQuery, setReplyingQuery] = useState<Query | null>(null);
+  const [replyText, setReplyText] = useState('');
+
   useEffect(() => {
-    // Load vendor profile data
-    loadVendorProfile();
+    // Load all vendor data
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [profileData, analyticsData, packages, leads, queriesData] = await Promise.all([
+          vendorAPI.getVendorProfile(),
+          vendorAPI.getVendorAnalytics(),
+          vendorAPI.getServicePackages(),
+          vendorAPI.getClientLeads(),
+          vendorAPI.getQueries()
+        ]);
+        setProfile(profileData || {});
+        setAnalytics(analyticsData || {});
+        setServicePackages(packages || []);
+        setClientLeads(leads || []);
+        setQueries(queriesData || []);
+      } catch (error) {
+        alert('Failed to load vendor data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+    // Real-time updates
+    const socket = getSocket();
+    socket.on('vendorLeadUpdated', (lead: ClientLead) => {
+      setClientLeads(prev => prev.map(l => l.id === lead.id ? lead : l));
+    });
+    socket.on('vendorLeadCreated', (lead: ClientLead) => {
+      setClientLeads(prev => [lead, ...prev]);
+    });
+    socket.on('vendorQueryUpdated', (query: Query) => {
+      setQueries(prev => prev.map(q => q.id === query.id ? query : q));
+    });
+    socket.on('vendorQueryCreated', (query: Query) => {
+      setQueries(prev => [query, ...prev]);
+    });
+    return () => {
+      socket.off('vendorLeadUpdated');
+      socket.off('vendorLeadCreated');
+      socket.off('vendorQueryUpdated');
+      socket.off('vendorQueryCreated');
+    };
   }, [vendorId]);
 
-  const loadVendorProfile = async () => {
-    setLoading(true);
-    try {
-      // TODO: Replace with actual API call
-      // const response = await vendorAPI.getVendorProfile(vendorId);
-      // setProfile(response.data);
-      
-      // Mock data for now
-      setProfile({
-        businessName: 'Royal Wedding Services',
-        services: ['photography', 'decoration', 'catering'],
-        city: 'Mumbai',
-        location: 'Andheri West',
-        description: 'Premium wedding services with over 10 years of experience',
-        phone: '+91 98765 43210',
-        email: 'info@royalweddings.com',
-        website: 'www.royalweddings.com',
-        rating: 4.8,
-        totalReviews: 156,
-        isVerified: true
-      });
-    } catch (error) {
-      console.error('Error loading vendor profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Update profile
   const handleUpdateProfile = async () => {
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // await vendorAPI.updateProfile(profile);
+      await vendorAPI.updateVendorProfile(profile);
       setShowProfileForm(false);
       alert('Profile updated successfully!');
     } catch (error) {
@@ -187,25 +184,86 @@ const VendorDashboard: React.FC = () => {
     }
   };
 
+  // Service package CRUD
   const handleAddServicePackage = async () => {
-    // TODO: Implement add service package
-    setShowServiceForm(false);
+    if (!newPackage.title || !newPackage.description || !newPackage.price) {
+      alert('Please fill in all fields');
+      return;
+    }
+    try {
+      const pkg = await vendorAPI.addServicePackage({
+        title: newPackage.title,
+        description: newPackage.description,
+        price: parseFloat(newPackage.price),
+        isActive: newPackage.isActive
+      });
+      setServicePackages(prev => [...prev, pkg]);
+      setShowAddPackageModal(false);
+      setNewPackage({ title: '', description: '', price: '', isActive: true });
+    } catch (error) {
+      alert('Failed to add package');
+    }
+  };
+  const handleUpdatePackage = async () => {
+    if (!editPackage?.title || !editPackage.description || !editPackage.price) {
+      alert('Please fill in all fields');
+      return;
+    }
+    try {
+      const updated = await vendorAPI.updateServicePackage(editPackage.id, editPackage);
+      setServicePackages(prev => prev.map(pkg => pkg.id === editPackage.id ? updated : pkg));
+      setShowEditPackageModal(false);
+      setEditPackage(null);
+    } catch (error) {
+      alert('Failed to update package');
+    }
+  };
+  const handleDeletePackage = async () => {
+    if (deletePackageId) {
+      try {
+        await vendorAPI.deleteServicePackage(deletePackageId);
+        setServicePackages(prev => prev.filter(pkg => pkg.id !== deletePackageId));
+        setDeletePackageId(null);
+      } catch (error) {
+        alert('Failed to delete package');
+      }
+    }
+  };
+  const handleToggleActive = async (pkgId: string) => {
+    const pkg = servicePackages.find(p => p.id === pkgId);
+    if (pkg) {
+      try {
+        const updated = await vendorAPI.updateServicePackage(pkgId, { ...pkg, isActive: !pkg.isActive });
+        setServicePackages(prev => prev.map(p => p.id === pkgId ? updated : p));
+      } catch (error) {
+        alert('Failed to update package status');
+      }
+    }
   };
 
+  // Leads
   const handleUpdateLeadStatus = async (leadId: string, status: ClientLead['status']) => {
-    setClientLeads(prev => 
-      prev.map(lead => 
-        lead.id === leadId ? { ...lead, status } : lead
-      )
-    );
+    try {
+      await vendorAPI.updateLeadStatus(leadId, status);
+      setClientLeads(prev => prev.map(lead => lead.id === leadId ? { ...lead, status } : lead));
+    } catch (error) {
+      alert('Failed to update lead status');
+    }
   };
 
+  // Queries
   const handleReplyToQuery = async (queryId: string, reply: string) => {
-    setQueries(prev => 
-      prev.map(query => 
-        query.id === queryId ? { ...query, status: 'replied' } : query
-      )
-    );
+    try {
+      await vendorAPI.replyToQuery(queryId, reply);
+      setQueries(prev => prev.map(query => query.id === queryId ? { ...query, status: 'replied', reply } : query));
+    } catch (error) {
+      alert('Failed to reply to query');
+    }
+  };
+
+  const handleOpenReplyModal = (query: Query) => {
+    setReplyingQuery(query);
+    setReplyText('');
   };
 
   const getStatusBadge = (status: string) => {
@@ -223,6 +281,43 @@ const VendorDashboard: React.FC = () => {
       </span>
     );
   };
+
+  const filteredPackages = servicePackages.filter(pkg => {
+    const statusMatch = packageStatusFilter === 'all' || (packageStatusFilter === 'active' ? pkg.isActive : !pkg.isActive);
+    const searchMatch = pkg.title.toLowerCase().includes(packageSearch.toLowerCase());
+    return statusMatch && searchMatch;
+  });
+
+  const handleEditPackage = (pkg: ServicePackage) => {
+    setEditPackage(pkg);
+    setShowEditPackageModal(true);
+  };
+
+  const handleSendReply = () => {
+    if (!replyText.trim()) {
+      alert('Please enter a reply message');
+      return;
+    }
+    handleReplyToQuery(replyingQuery?.id || '', replyText);
+    setReplyingQuery(null);
+    setReplyText('');
+  };
+
+  // Add new tabs
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: BarChart3 },
+    { id: 'services', label: 'Services', icon: Package },
+    { id: 'leads', label: 'Client Leads', icon: Users },
+    { id: 'queries', label: 'Queries', icon: MessageSquare },
+    { id: 'bookings', label: 'Bookings', icon: Calendar },
+    { id: 'reviews', label: 'Reviews', icon: Star },
+    { id: 'earnings', label: 'Earnings', icon: DollarSign },
+    { id: 'profile', label: 'Profile', icon: Building },
+    { id: 'documents', label: 'Documents', icon: FileText },
+    { id: 'achievements', label: 'Achievements', icon: Award },
+    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'support', label: 'Support', icon: HelpCircle },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -258,12 +353,7 @@ const VendorDashboard: React.FC = () => {
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8">
-            {[
-              { id: 'overview', label: 'Overview', icon: BarChart3 },
-              { id: 'services', label: 'Services', icon: Package },
-              { id: 'leads', label: 'Client Leads', icon: Users },
-              { id: 'queries', label: 'Queries', icon: MessageSquare }
-            ].map(tab => {
+            {tabs.map(tab => {
               const Icon = tab.icon;
               return (
                 <button
@@ -285,7 +375,7 @@ const VendorDashboard: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Stats Grid */}
@@ -371,35 +461,219 @@ const VendorDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">Service Packages</h2>
               <button
-                onClick={() => setShowServiceForm(true)}
+                onClick={() => setShowAddPackageModal(true)}
                 className="btn-primary flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Add Package
               </button>
             </div>
-
+            <div className="flex flex-col md:flex-row md:items-center md:gap-4 gap-2">
+              <select
+                className="input-field w-40"
+                value={packageStatusFilter}
+                onChange={e => setPackageStatusFilter(e.target.value)}
+              >
+                <option value="all">All</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <input
+                type="text"
+                className="input-field flex-1"
+                placeholder="Search by title..."
+                value={packageSearch}
+                onChange={e => setPackageSearch(e.target.value)}
+              />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {servicePackages.map(pkg => (
+              {filteredPackages.map(pkg => (
                 <div key={pkg.id} className="bg-white rounded-lg shadow p-6">
                   <div className="flex items-start justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900">{pkg.title}</h3>
-                    <button className="text-gray-400 hover:text-gray-600">
-                      <Edit className="w-4 h-4" />
-                    </button>
+                    <div className="flex gap-2">
+                      <button className="text-gray-400 hover:text-gray-600" onClick={() => handleEditPackage(pkg)} title="Edit">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button className="text-gray-400 hover:text-red-600" onClick={() => setDeletePackageId(pkg.id)} title="Delete">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                   <p className="text-gray-600 mb-4">{pkg.description}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-2xl font-bold text-saffron">₹{pkg.price.toLocaleString()}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      pkg.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
+                    <button
+                      className={`px-2 py-1 rounded-full text-xs font-medium focus:outline-none ${pkg.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                      onClick={() => handleToggleActive(pkg.id)}
+                    >
                       {pkg.isActive ? 'Active' : 'Inactive'}
-                    </span>
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
+            {/* Add Package Modal (already present) */}
+            {showAddPackageModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Add Service Package</h3>
+                    <button
+                      onClick={() => setShowAddPackageModal(false)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                      <input
+                        type="text"
+                        value={newPackage.title}
+                        onChange={e => setNewPackage({ ...newPackage, title: e.target.value })}
+                        className="input-field"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                      <textarea
+                        value={newPackage.description}
+                        onChange={e => setNewPackage({ ...newPackage, description: e.target.value })}
+                        className="input-field h-24"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Price (INR)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={newPackage.price}
+                        onChange={e => setNewPackage({ ...newPackage, price: e.target.value })}
+                        className="input-field"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={newPackage.isActive}
+                        onChange={e => setNewPackage({ ...newPackage, isActive: e.target.checked })}
+                        className="rounded border-gray-300 text-saffron focus:ring-saffron"
+                        id="isActive"
+                      />
+                      <label htmlFor="isActive" className="text-sm text-gray-700">Active</label>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        onClick={handleAddServicePackage}
+                        className="btn-primary flex-1"
+                      >
+                        Add Package
+                      </button>
+                      <button
+                        onClick={() => setShowAddPackageModal(false)}
+                        className="btn-outline flex-1"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Edit Package Modal */}
+            {showEditPackageModal && editPackage && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Edit Service Package</h3>
+                    <button
+                      onClick={() => setShowEditPackageModal(false)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                      <input
+                        type="text"
+                        value={editPackage.title}
+                        onChange={e => setEditPackage({ ...editPackage, title: e.target.value })}
+                        className="input-field"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                      <textarea
+                        value={editPackage.description}
+                        onChange={e => setEditPackage({ ...editPackage, description: e.target.value })}
+                        className="input-field h-24"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Price (INR)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editPackage.price}
+                        onChange={e => setEditPackage({ ...editPackage, price: Number(e.target.value) })}
+                        className="input-field"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={editPackage.isActive}
+                        onChange={e => setEditPackage({ ...editPackage, isActive: e.target.checked })}
+                        className="rounded border-gray-300 text-saffron focus:ring-saffron"
+                        id="editIsActive"
+                      />
+                      <label htmlFor="editIsActive" className="text-sm text-gray-700">Active</label>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        onClick={handleUpdatePackage}
+                        className="btn-primary flex-1"
+                      >
+                        Update Package
+                      </button>
+                      <button
+                        onClick={() => setShowEditPackageModal(false)}
+                        className="btn-outline flex-1"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Delete Confirmation Modal */}
+            {deletePackageId && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 w-full max-w-sm">
+                  <h3 className="text-lg font-semibold mb-4">Delete Package?</h3>
+                  <p className="mb-6">Are you sure you want to delete this package? This action cannot be undone.</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDeletePackage}
+                      className="btn-danger flex-1"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => setDeletePackageId(null)}
+                      className="btn-outline flex-1"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -475,15 +749,25 @@ const VendorDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900">Customer Queries</h2>
               <div className="flex gap-2">
-                <select className="input-field">
+                <select
+                  className="input-field w-40"
+                  value={queryStatusFilter}
+                  onChange={e => setQueryStatusFilter(e.target.value)}
+                >
                   <option value="all">All Queries</option>
                   <option value="unread">Unread</option>
                   <option value="read">Read</option>
                   <option value="replied">Replied</option>
                 </select>
+                <input
+                  type="text"
+                  className="input-field flex-1"
+                  placeholder="Search queries..."
+                  value={querySearch}
+                  onChange={e => setQuerySearch(e.target.value)}
+                />
               </div>
             </div>
-
             <div className="space-y-4">
               {queries.map(query => (
                 <div key={query.id} className="bg-white rounded-lg shadow p-6">
@@ -507,12 +791,57 @@ const VendorDashboard: React.FC = () => {
                   </div>
                   <p className="text-gray-700 mb-4">{query.message}</p>
                   <div className="flex gap-2">
-                    <button className="btn-primary text-sm">Reply</button>
-                    <button className="btn-outline text-sm">Mark as Read</button>
+                    <button className="btn-primary text-sm" onClick={() => handleOpenReplyModal(query)}>Reply</button>
+                    <button className="btn-outline text-sm" onClick={() => setQueries(prev => prev.map(q => q.id === query.id ? { ...q, status: 'read' } : q))}>Mark as Read</button>
                   </div>
+                  {query.reply && (
+                    <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-700">
+                      <strong>Reply:</strong> {query.reply}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
+            {/* Reply Modal */}
+            {replyingQuery && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Reply to Query</h3>
+                    <button
+                      onClick={() => setReplyingQuery(null)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Reply Message</label>
+                      <textarea
+                        value={replyText}
+                        onChange={e => setReplyText(e.target.value)}
+                        className="input-field h-24"
+                      />
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        onClick={handleSendReply}
+                        className="btn-primary flex-1"
+                      >
+                        Send Reply
+                      </button>
+                      <button
+                        onClick={() => setReplyingQuery(null)}
+                        className="btn-outline flex-1"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -603,6 +932,75 @@ const VendorDashboard: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setShowProfileForm(false)}
+                  className="btn-outline flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddPackageModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Add Service Package</h3>
+              <button
+                onClick={() => setShowAddPackageModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={newPackage.title}
+                  onChange={e => setNewPackage({ ...newPackage, title: e.target.value })}
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={newPackage.description}
+                  onChange={e => setNewPackage({ ...newPackage, description: e.target.value })}
+                  className="input-field h-24"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price (INR)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newPackage.price}
+                  onChange={e => setNewPackage({ ...newPackage, price: e.target.value })}
+                  className="input-field"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={newPackage.isActive}
+                  onChange={e => setNewPackage({ ...newPackage, isActive: e.target.checked })}
+                  className="rounded border-gray-300 text-saffron focus:ring-saffron"
+                  id="isActive"
+                />
+                <label htmlFor="isActive" className="text-sm text-gray-700">Active</label>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={handleAddServicePackage}
+                  className="btn-primary flex-1"
+                >
+                  Add Package
+                </button>
+                <button
+                  onClick={() => setShowAddPackageModal(false)}
                   className="btn-outline flex-1"
                 >
                   Cancel

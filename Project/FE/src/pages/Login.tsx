@@ -20,7 +20,8 @@ const Login: React.FC = () => {
       // Redirect based on user role
       const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
       if (storedUser.role === 'vendor') {
-        navigate(`/app/vendor/${storedUser.id}`);
+        // Always redirect to vendor onboarding or dashboard
+        navigate('/vendor/onboarding');
       } else if (storedUser.role === 'counselor') {
         navigate(`/app/counselor/${storedUser.id}`);
       } else if (storedUser.role === 'community') {

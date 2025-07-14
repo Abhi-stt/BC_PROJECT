@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { UserProvider } from './contexts/UserContext';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -26,8 +26,10 @@ import Counseling from './pages/Counseling';
 import WeddingPlanning from './pages/WeddingPlanning';
 import Support from './pages/Support';
 import VendorDashboard from './pages/VendorDashboard';
+import VendorOnboarding from './pages/VendorOnboarding';
 import CounselorDashboard from './pages/CounselorDashboard';
 import CommunityDashboard from './pages/CommunityDashboard';
+import VendorLayout from './components/VendorLayout';
 
 function App() {
   return (
@@ -59,13 +61,29 @@ function App() {
                 <Route path="admin" element={<Admin />} />
                 <Route path="events" element={<Events />} />
                 <Route path="support" element={<Support />} />
-                <Route path="vendor-dashboard" element={<VendorDashboard />} />
-                <Route path="counselor-dashboard" element={<CounselorDashboard />} />
-                <Route path="community-dashboard" element={<CommunityDashboard />} />
-                <Route path="vendor/:vendorId" element={<VendorDashboard />} />
-                <Route path="counselor/:counselorId" element={<CounselorDashboard />} />
-                <Route path="community/:communityId" element={<CommunityDashboard />} />
               </Route>
+
+              {/* Vendor-specific routes with vendor layout */}
+              <Route path="/vendor" element={<VendorLayout />}>
+                <Route path="onboarding" element={<VendorOnboarding />} />
+                <Route path="dashboard" element={<VendorDashboard />} />
+                <Route path="services" element={<div className="p-6"><h2 className="text-2xl font-bold">Vendor Services</h2><p>Manage your service packages here.</p></div>} />
+                <Route path="leads" element={<div className="p-6"><h2 className="text-2xl font-bold">Client Leads</h2><p>Manage your client inquiries here.</p></div>} />
+                <Route path="messages" element={<div className="p-6"><h2 className="text-2xl font-bold">Messages</h2><p>Communicate with clients here.</p></div>} />
+                <Route path="bookings" element={<div className="p-6"><h2 className="text-2xl font-bold">Bookings</h2><p>Manage your appointments here.</p></div>} />
+                <Route path="reviews" element={<div className="p-6"><h2 className="text-2xl font-bold">Reviews</h2><p>View client feedback here.</p></div>} />
+                <Route path="earnings" element={<div className="p-6"><h2 className="text-2xl font-bold">Earnings</h2><p>Track your revenue here.</p></div>} />
+                <Route path="profile" element={<div className="p-6"><h2 className="text-2xl font-bold">Business Profile</h2><p>Manage your business information here.</p></div>} />
+                <Route path="documents" element={<div className="p-6"><h2 className="text-2xl font-bold">Documents</h2><p>Upload certificates and licenses here.</p></div>} />
+                <Route path="achievements" element={<div className="p-6"><h2 className="text-2xl font-bold">Achievements</h2><p>View your awards and recognition here.</p></div>} />
+                <Route path="settings" element={<div className="p-6"><h2 className="text-2xl font-bold">Settings</h2><p>Configure your account here.</p></div>} />
+                <Route path="support" element={<div className="p-6"><h2 className="text-2xl font-bold">Support</h2><p>Get help and assistance here.</p></div>} />
+              </Route>
+
+              {/* Redirect any /app/vendor/* route to /vendor/dashboard */}
+              <Route path="/app/vendor/*" element={<Navigate to="/vendor/dashboard" replace />} />
+              {/* Redirect any /vendor/:id to /vendor/dashboard */}
+              <Route path="/vendor/:id" element={<Navigate to="/vendor/dashboard" replace />} />
             </Routes>
           </Router>
         </NotificationProvider>

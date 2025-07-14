@@ -35,6 +35,25 @@ const VendorSchema = new Schema({
     currency: { type: String, default: 'INR' },
     isActive: { type: Boolean, default: true }
   }],
+  // Add leads subdocument
+  leads: [{
+    name: String,
+    email: String,
+    phone: String,
+    service: String,
+    message: String,
+    status: { type: String, enum: ['new', 'contacted', 'quoted', 'booked', 'lost'], default: 'new' },
+    createdAt: { type: Date, default: Date.now }
+  }],
+  // Add queries subdocument
+  queries: [{
+    from: String,
+    subject: String,
+    message: String,
+    status: { type: String, enum: ['unread', 'read', 'replied'], default: 'unread' },
+    createdAt: { type: Date, default: Date.now },
+    reply: String
+  }],
   rating: { 
     type: Number, 
     default: 0 
