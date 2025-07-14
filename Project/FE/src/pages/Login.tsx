@@ -8,7 +8,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -17,7 +17,19 @@ const Login: React.FC = () => {
     
     try {
       await login(email, password);
-      navigate('/app');
+      // Redirect based on user role
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      if (storedUser.role === 'vendor') {
+        navigate(`/app/vendor/${storedUser.id}`);
+      } else if (storedUser.role === 'counselor') {
+        navigate(`/app/counselor/${storedUser.id}`);
+      } else if (storedUser.role === 'community') {
+        navigate(`/app/community/${storedUser.id}`);
+      } else if (storedUser.role === 'admin') {
+        navigate('/app/admin');
+      } else {
+        navigate('/app');
+      }
     } catch (error) {
       console.error('Login failed:', error);
     } finally {

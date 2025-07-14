@@ -1,20 +1,114 @@
 const mongoose = require('mongoose');
-const { Schema } = mongoose;
 
-const CounselorSchema = new Schema({
-  name: String,
-  title: String,
-  specialization: [String],
-  experience: Number,
-  rating: Number,
-  reviews: Number,
-  languages: [String],
-  photo: String,
-  verified: Boolean,
-  availability: String,
-  sessionTypes: [String],
-  pricePerSession: Number,
-  bio: String
+const counselorSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true
+  },
+  name: {
+    type: String,
+    required: true
+  },
+  specialization: {
+    type: String,
+    required: true
+  },
+  experience: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  counselingMethods: [{
+    type: String,
+    enum: ['online', 'offline', 'both'],
+    default: ['online']
+  }],
+  availableCities: [{
+    type: String,
+    required: true
+  }],
+  sessionFees: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  description: {
+    type: String,
+    required: true
+  },
+  phone: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true
+  },
+  rating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5
+  },
+  totalSessions: {
+    type: Number,
+    default: 0
+  },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  status: {
+    type: String,
+    enum: ['active', 'pending', 'suspended'],
+    default: 'pending'
+  },
+  timeSlots: [{
+    day: {
+      type: String,
+      enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+      required: true
+    },
+    startTime: {
+      type: String,
+      required: true
+    },
+    endTime: {
+      type: String,
+      required: true
+    },
+    isAvailable: {
+      type: Boolean,
+      default: true
+    },
+    sessionType: {
+      type: String,
+      enum: ['online', 'offline', 'both'],
+      default: 'both'
+    }
+  }],
+  totalEarnings: {
+    type: Number,
+    default: 0
+  },
+  totalRequests: {
+    type: Number,
+    default: 0
+  },
+  completedSessions: {
+    type: Number,
+    default: 0
+  }
+}, {
+  timestamps: true
 });
 
-module.exports = mongoose.model('Counselor', CounselorSchema); 
+// Index for efficient queries
+counselorSchema.index({ userId: 1 });
+counselorSchema.index({ status: 1 });
+counselorSchema.index({ isVerified: 1 });
+counselorSchema.index({ availableCities: 1 });
+
+module.exports = mongoose.model('Counselor', counselorSchema); 

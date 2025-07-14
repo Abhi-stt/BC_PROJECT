@@ -25,13 +25,16 @@ import VideoCall from './pages/VideoCall';
 import Counseling from './pages/Counseling';
 import WeddingPlanning from './pages/WeddingPlanning';
 import Support from './pages/Support';
+import VendorDashboard from './pages/VendorDashboard';
+import CounselorDashboard from './pages/CounselorDashboard';
+import CommunityDashboard from './pages/CommunityDashboard';
 
 function App() {
   return (
     <AuthProvider>
       <UserProvider>
         <NotificationProvider>
-          <Router>
+          <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
@@ -56,6 +59,12 @@ function App() {
                 <Route path="admin" element={<Admin />} />
                 <Route path="events" element={<Events />} />
                 <Route path="support" element={<Support />} />
+                <Route path="vendor-dashboard" element={<VendorDashboard />} />
+                <Route path="counselor-dashboard" element={<CounselorDashboard />} />
+                <Route path="community-dashboard" element={<CommunityDashboard />} />
+                <Route path="vendor/:vendorId" element={<VendorDashboard />} />
+                <Route path="counselor/:counselorId" element={<CounselorDashboard />} />
+                <Route path="community/:communityId" element={<CommunityDashboard />} />
               </Route>
             </Routes>
           </Router>

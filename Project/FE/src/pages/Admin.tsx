@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminStats, samplePosts, reportedContent, analyticsData, notifications, announcements } from '../data/sampleData';
-import { adminAPI, getSocket, userAPI, supportAPI } from '../services/api';
+import { adminAPI, getSocket, userAPI, supportAPI, vendorAPI, requestAPI, emailAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   Users, 
@@ -76,6 +76,57 @@ const Admin: React.FC = () => {
   const [isConnected, setIsConnected] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
+  // Vendor tab state
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [vendorRequests, setVendorRequests] = useState<any[]>([]);
+  const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
+  const [vendorSearchTerm, setVendorSearchTerm] = useState('');
+  const [vendorStatusFilter, setVendorStatusFilter] = useState('all');
+  const [showVendorDetails, setShowVendorDetails] = useState<string | null>(null);
+  const [showApprovalModal, setShowApprovalModal] = useState<string | null>(null);
+  const [approvalData, setApprovalData] = useState({
+    businessName: '',
+    services: [] as string[],
+    city: '',
+    location: ''
+  });
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showRejectionModal, setShowRejectionModal] = useState<string | null>(null);
+
+  // Role management state
+  const [roleRequests, setRoleRequests] = useState<any[]>([]);
+  const [approvedRoles, setApprovedRoles] = useState<any[]>([]);
+  const [roleSearchTerm, setRoleSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [showRoleApprovalModal, setShowRoleApprovalModal] = useState<string | null>(null);
+  const [roleApprovalData, setRoleApprovalData] = useState({
+    businessName: '',
+    services: [] as string[],
+    city: '',
+    location: '',
+    specialization: '',
+    experience: '',
+    counselingMethods: [] as string[],
+    sessionFees: '',
+    communityName: '',
+    religion: '',
+    region: '',
+    rules: ''
+  });
+  const [roleRejectionReason, setRoleRejectionReason] = useState('');
+  const [showRoleRejectionModal, setShowRoleRejectionModal] = useState<string | null>(null);
+
+  // Email management state
+  const [showTestEmailModal, setShowTestEmailModal] = useState(false);
+  const [showBulkEmailModal, setShowBulkEmailModal] = useState(false);
+  const [testEmail, setTestEmail] = useState('');
+  const [bulkEmailData, setBulkEmailData] = useState({
+    roleType: 'vendor',
+    subject: '',
+    message: ''
+  });
+  const [emailStats, setEmailStats] = useState<any>(null);
+
   // Filtered posts and reports for moderation
   const filteredPosts = postStatusFilter === 'all' ? posts : posts.filter(p => p.status === postStatusFilter);
 
@@ -124,7 +175,11 @@ const Admin: React.FC = () => {
           fetchAnnouncements(),
           fetchPosts(),
           fetchReports(),
-          fetchSupportTickets()
+          fetchSupportTickets(),
+          fetchVendors(),
+          fetchVendorRequests(),
+          fetchApprovedRoles(),
+          fetchEmailStats()
         ]);
         console.log('All data fetched successfully');
       } catch (error) {
@@ -329,6 +384,162 @@ const Admin: React.FC = () => {
         setSupportTickets([]);
       })
       .finally(() => setLoading(false));
+  };
+
+  const fetchVendors = () => {
+    setLoading(true);
+    setError(null);
+    
+    vendorAPI.getAllVendors()
+      .then(data => {
+        console.log('Vendors fetched successfully:', data.length);
+        setVendors(data.map((v: any) => ({
+          ...v,
+          id: v._id,
+          businessName: v.businessName || '',
+          services: v.services || [],
+          city: v.city || '',
+          location: v.location || '',
+          status: v.status || 'pending',
+          rating: v.rating || 0,
+          totalReviews: v.totalReviews || 0,
+          isVerified: v.isVerified || false,
+          createdAt: v.createdAt,
+          user: v.userId ? {
+            id: v.userId._id,
+            name: v.userId.name,
+            email: v.userId.email,
+            phone: v.userId.phone
+          } : null
+        })));
+      })
+      .catch(err => {
+        console.error('Error fetching vendors:', err);
+        setError('Failed to fetch vendors: ' + (err.message || 'Unknown error'));
+      })
+      .finally(() => setLoading(false));
+  };
+
+  const fetchApprovedRoles = () => {
+    setError(null);
+    
+    // Fetch all approved vendors, counselors, and communities
+    Promise.all([
+      vendorAPI.getAllVendors(),
+      // Add counselor and community APIs when they're created
+    ])
+      .then(([vendorsData]) => {
+        const allRoles = [
+          ...vendorsData.map((v: any) => ({
+            ...v,
+            id: v._id,
+            roleType: 'vendor',
+            businessName: v.businessName || '',
+            services: v.services || [],
+            city: v.city || '',
+            location: v.location || '',
+            status: v.status || 'active',
+            rating: v.rating || 0,
+            totalReviews: v.totalReviews || 0,
+            isVerified: v.isVerified || false,
+            createdAt: v.createdAt,
+            user: v.userId ? {
+              id: v.userId._id,
+              name: v.userId.name,
+              email: v.userId.email,
+              phone: v.userId.phone
+            } : null
+          }))
+        ];
+        
+        setApprovedRoles(allRoles);
+      })
+      .catch(err => {
+        console.error('Error fetching approved roles:', err);
+        setError('Failed to fetch approved roles: ' + (err.message || 'Unknown error'));
+      });
+  };
+
+  const fetchVendorRequests = () => {
+    setError(null);
+    
+    requestAPI.getAllRequests()
+      .then(data => {
+        console.log('Role requests fetched successfully:', data.length);
+        setRoleRequests(data.map((r: any) => ({
+          ...r,
+          id: r._id,
+          name: r.name || '',
+          email: r.email || '',
+          phone: r.phone || '',
+          roleRequested: r.roleRequested || 'vendor',
+          message: r.message || '',
+          status: r.status || 'pending',
+          createdAt: r.createdAt,
+          reviewedBy: r.reviewedBy ? {
+            id: r.reviewedBy._id,
+            name: r.reviewedBy.name,
+            email: r.reviewedBy.email
+          } : null
+        })));
+      })
+      .catch(err => {
+        console.error('Error fetching role requests:', err);
+        setError('Failed to fetch role requests: ' + (err.message || 'Unknown error'));
+      });
+  };
+
+  // Email management functions
+  const fetchEmailStats = () => {
+    emailAPI.getEmailStats()
+      .then(data => {
+        setEmailStats(data.data);
+      })
+      .catch(err => {
+        console.error('Error fetching email stats:', err);
+      });
+  };
+
+  const handleSendTestEmail = async () => {
+    if (!testEmail) {
+      setError('Please enter an email address');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await emailAPI.sendTestEmail(testEmail);
+      showSuccess('Test email sent successfully!');
+      setShowTestEmailModal(false);
+      setTestEmail('');
+    } catch (err: any) {
+      setError('Failed to send test email: ' + (err.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendBulkEmail = async () => {
+    if (!bulkEmailData.subject || !bulkEmailData.message) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await emailAPI.sendBulkNotification(
+        bulkEmailData.roleType,
+        bulkEmailData.subject,
+        bulkEmailData.message
+      );
+      showSuccess(`Bulk email sent successfully! ${result.summary.successful} delivered, ${result.summary.failed} failed.`);
+      setShowBulkEmailModal(false);
+      setBulkEmailData({ roleType: 'vendor', subject: '', message: '' });
+    } catch (err: any) {
+      setError('Failed to send bulk email: ' + (err.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleTicketAction = async (ticketId: string, action: string, value?: any) => {
@@ -820,10 +1031,135 @@ const Admin: React.FC = () => {
     }
   };
 
+  // Vendor action handlers
+  const handleVendorAction = async (vendorId: string, action: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      let result;
+      
+      switch (action) {
+        case 'activate':
+          result = await vendorAPI.updateVendorStatus(vendorId, 'active');
+          break;
+        case 'suspend':
+          result = await vendorAPI.updateVendorStatus(vendorId, 'suspended');
+          break;
+        case 'verify':
+          // Update vendor verification status
+          setVendors(prev => prev.map(v => 
+            v.id === vendorId ? { ...v, isVerified: true } : v
+          ));
+          showSuccess('Vendor verified successfully');
+          return;
+        default:
+          throw new Error(`Unknown action: ${action}`);
+      }
+      
+      // Update vendors list
+      setVendors(prev => prev.map(v => 
+        v.id === vendorId ? { ...v, ...result.vendor } : v
+      ));
+      
+      showSuccess(`Vendor ${action} successful`);
+      
+    } catch (err: any) {
+      setError(err.message || `Failed to ${action} vendor`);
+      console.error(`Error ${action}ing vendor:`, err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVendorRequestAction = async (requestId: string, action: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      if (action === 'approve') {
+        const result = await vendorAPI.approveVendorRequest(requestId, approvalData);
+        showSuccess(`Vendor request approved. Temporary password: ${result.tempPassword}`);
+        
+        // Clear approval modal
+        setShowApprovalModal(null);
+        setApprovalData({
+          businessName: '',
+          services: [],
+          city: '',
+          location: ''
+        });
+        
+        // Refresh data
+        fetchApprovedRoles();
+        fetchVendors();
+        
+      } else if (action === 'reject') {
+        await vendorAPI.rejectVendorRequest(requestId, rejectionReason);
+        showSuccess('Vendor request rejected');
+        
+        // Clear rejection modal
+        setShowRejectionModal(null);
+        setRejectionReason('');
+        
+        // Refresh requests
+        fetchApprovedRoles();
+      }
+      
+    } catch (err: any) {
+      setError(err.message || `Failed to ${action} vendor request`);
+      console.error(`Error ${action}ing vendor request:`, err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRoleRequestAction = async (requestId: string, action: string, reason?: string) => {
+    setLoading(true);
+    setError(null);
+    console.log(`🔄 Starting ${action} process for request:`, requestId);
+    
+    try {
+      if (action === 'approve') {
+        console.log('📧 Calling approveRequest API...');
+        const result = await requestAPI.approveRequest(requestId, {});
+        console.log('✅ Approval API response:', result);
+        showSuccess('Role application approved successfully! Email with login credentials has been sent. Please check spam/junk folder if email is not received.');
+        setShowRoleApprovalModal(null);
+      } else if (action === 'reject') {
+        console.log('📧 Calling rejectRequest API...');
+        const result = await requestAPI.rejectRequest(requestId, { reason });
+        console.log('✅ Rejection API response:', result);
+        showSuccess('Role application rejected');
+        setShowRoleRejectionModal(null);
+        setRejectionReason('');
+      }
+      
+      console.log('🔄 Refreshing data...');
+      await fetchApprovedRoles();
+      setRoleRequests([]);
+      console.log('✅ Data refresh completed');
+      
+    } catch (err: any) {
+      console.error(`❌ Error ${action}ing role application:`, err);
+      setError(err.message || `Failed to ${action} role application`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const filteredVendors = vendors.filter(vendor => {
+    const matchesSearch = vendor.businessName.toLowerCase().includes(vendorSearchTerm.toLowerCase()) ||
+                         vendor.city.toLowerCase().includes(vendorSearchTerm.toLowerCase()) ||
+                         (vendor.user?.name && vendor.user.name.toLowerCase().includes(vendorSearchTerm.toLowerCase()));
+    const matchesStatus = vendorStatusFilter === 'all' || vendor.status === vendorStatusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -1023,10 +1359,12 @@ const Admin: React.FC = () => {
         {[
           { id: 'overview', label: 'Overview' },
           { id: 'users', label: 'Users' },
+          { id: 'manage-roles', label: 'Manage Roles' },
           { id: 'moderation', label: 'Moderation' },
           { id: 'support', label: 'Support' },
           { id: 'analytics', label: 'Analytics' },
-          { id: 'communication', label: 'Communication' }
+          { id: 'communication', label: 'Communication' },
+          { id: 'email', label: 'Email Management' }
         ].map(tab => (
           <button
             key={tab.id}
@@ -1443,6 +1781,231 @@ const Admin: React.FC = () => {
                 </div>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* Manage Roles Tab */}
+      {activeTab === 'manage-roles' && (
+        <div className="space-y-6">
+          {/* Role Requests Section */}
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Role Applications</h3>
+              <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-sm">
+                {roleRequests.filter(r => r.status === 'pending').length} pending
+              </span>
+            </div>
+            
+            {roleRequests.length === 0 ? (
+              <div className="text-center text-gray-400">No role applications found.</div>
+            ) : (
+              <div className="space-y-4">
+                {roleRequests.map(request => (
+                  <div key={request.id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {request.status}
+                          </span>
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            request.roleRequested === 'vendor' ? 'bg-blue-100 text-blue-800' :
+                            request.roleRequested === 'counselor' ? 'bg-purple-100 text-purple-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {request.roleRequested.charAt(0).toUpperCase() + request.roleRequested.slice(1)}
+                          </span>
+                        </div>
+                        <h4 className="font-medium text-gray-900">{request.name}</h4>
+                        <p className="text-sm text-gray-600">{request.email} • {request.phone}</p>
+                        {request.message && (
+                          <p className="text-sm text-gray-600 mt-2">{request.message}</p>
+                        )}
+                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                          <span>Submitted: {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                      </div>
+                      {request.status === 'pending' && (
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setShowRoleApprovalModal(request.id)}
+                            className="text-green-600 hover:text-green-900 text-sm px-3 py-1 border border-green-300 rounded"
+                            disabled={loading}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => setShowRoleRejectionModal(request.id)}
+                            className="text-red-600 hover:text-red-900 text-sm px-3 py-1 border border-red-300 rounded"
+                            disabled={loading}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Approved Roles Section */}
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Approved Roles</h3>
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search roles..."
+                    value={roleSearchTerm}
+                    onChange={(e) => setRoleSearchTerm(e.target.value)}
+                    className="input-field pl-10 w-64"
+                  />
+                </div>
+                <select 
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="input-field"
+                >
+                  <option value="all">All Roles</option>
+                  <option value="vendor">Vendors</option>
+                  <option value="counselor">Counselors</option>
+                  <option value="community">Communities</option>
+                </select>
+              </div>
+            </div>
+
+            {approvedRoles.length === 0 ? (
+              <div className="text-center text-gray-400">No approved roles found.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Role
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Details
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Contact
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {approvedRoles.map(role => (
+                      <tr key={role.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {role.roleType === 'vendor' ? role.businessName : 
+                                 role.roleType === 'counselor' ? role.specialization : 
+                                 role.communityName}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {role.user?.name} • {role.user?.email}
+                              </div>
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                role.roleType === 'vendor' ? 'bg-blue-100 text-blue-800' :
+                                role.roleType === 'counselor' ? 'bg-purple-100 text-purple-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {role.roleType.charAt(0).toUpperCase() + role.roleType.slice(1)}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900">
+                            {role.roleType === 'vendor' && (
+                              <div className="flex flex-wrap gap-1">
+                                {role.services.slice(0, 3).map((service: string, index: number) => (
+                                  <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                                    {service}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {role.roleType === 'counselor' && (
+                              <div>
+                                <div className="text-sm">{role.specialization}</div>
+                                <div className="text-xs text-gray-500">{role.experience} years experience</div>
+                              </div>
+                            )}
+                            {role.roleType === 'community' && (
+                              <div>
+                                <div className="text-sm">{role.religion}</div>
+                                <div className="text-xs text-gray-500">{role.region}</div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {role.user?.phone}
+                        </td>
+                        <td className="px-6 py-4">
+                          {getStatusBadge(role.status)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => setShowVendorDetails(role.id)}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="View Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => window.open(`/app/${role.roleType}/${role.id}`, '_blank')}
+                              className="text-green-600 hover:text-green-900"
+                              title="View Dashboard"
+                            >
+                              <Users className="w-4 h-4" />
+                            </button>
+                            {role.status === 'active' && (
+                              <button
+                                onClick={() => handleVendorAction(role.id, 'suspend')}
+                                className="text-yellow-600 hover:text-yellow-900"
+                                title="Suspend"
+                                disabled={loading}
+                              >
+                                <Ban className="w-4 h-4" />
+                              </button>
+                            )}
+                            {role.status === 'suspended' && (
+                              <button
+                                onClick={() => handleVendorAction(role.id, 'activate')}
+                                className="text-green-600 hover:text-green-900"
+                                title="Activate"
+                                disabled={loading}
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -2392,6 +2955,621 @@ const Admin: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Vendor Approval Modal */}
+          {showApprovalModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Approve Vendor Request</h3>
+                  <button
+                    onClick={() => setShowApprovalModal(null)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Business Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={approvalData.businessName}
+                      onChange={(e) => setApprovalData({...approvalData, businessName: e.target.value})}
+                      className="input-field w-full"
+                      placeholder="Enter business name"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Services *
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {['catering', 'makeup', 'photography', 'decoration', 'music', 'transport', 'jewelry', 'clothing', 'venue', 'other'].map(service => (
+                        <label key={service} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={approvalData.services.includes(service)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setApprovalData({
+                                  ...approvalData,
+                                  services: [...approvalData.services, service]
+                                });
+                              } else {
+                                setApprovalData({
+                                  ...approvalData,
+                                  services: approvalData.services.filter(s => s !== service)
+                                });
+                              }
+                            }}
+                            className="rounded border-gray-300 mr-2"
+                          />
+                          <span className="text-sm capitalize">{service}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        City *
+                      </label>
+                      <input
+                        type="text"
+                        value={approvalData.city}
+                        onChange={(e) => setApprovalData({...approvalData, city: e.target.value})}
+                        className="input-field w-full"
+                        placeholder="Enter city"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Location *
+                      </label>
+                      <input
+                        type="text"
+                        value={approvalData.location}
+                        onChange={(e) => setApprovalData({...approvalData, location: e.target.value})}
+                        className="input-field w-full"
+                        placeholder="Enter location"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <button
+                      onClick={() => setShowApprovalModal(null)}
+                      className="btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => handleVendorRequestAction(showApprovalModal, 'approve')}
+                      className="btn-primary"
+                      disabled={!approvalData.businessName || !approvalData.services.length || !approvalData.city || !approvalData.location || loading}
+                    >
+                      {loading ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      Approve Vendor
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Vendor Rejection Modal */}
+          {showRejectionModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Reject Vendor Request</h3>
+                  <button
+                    onClick={() => setShowRejectionModal(null)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Rejection Reason *
+                    </label>
+                    <textarea
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      className="input-field w-full h-32"
+                      placeholder="Please provide a reason for rejection..."
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <button
+                      onClick={() => setShowRejectionModal(null)}
+                      className="btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => handleVendorRequestAction(showRejectionModal, 'reject')}
+                      className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                      disabled={!rejectionReason.trim() || loading}
+                    >
+                      {loading ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      Reject Request
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Test Email Modal */}
+          {showTestEmailModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Send Test Email</h3>
+                  <button
+                    onClick={() => setShowTestEmailModal(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={testEmail}
+                      onChange={(e) => setTestEmail(e.target.value)}
+                      className="input-field w-full"
+                      placeholder="Enter email address"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <button
+                      onClick={() => setShowTestEmailModal(false)}
+                      className="btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSendTestEmail}
+                      className="btn-primary"
+                      disabled={!testEmail || loading}
+                    >
+                      {loading ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      Send Test Email
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Bulk Email Modal */}
+          {showBulkEmailModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Send Bulk Notification</h3>
+                  <button
+                    onClick={() => setShowBulkEmailModal(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Target Role
+                    </label>
+                    <select
+                      value={bulkEmailData.roleType}
+                      onChange={(e) => setBulkEmailData({...bulkEmailData, roleType: e.target.value})}
+                      className="input-field w-full"
+                    >
+                      <option value="vendor">Vendors</option>
+                      <option value="counselor">Counselors</option>
+                      <option value="community">Community Managers</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Subject
+                    </label>
+                    <input
+                      type="text"
+                      value={bulkEmailData.subject}
+                      onChange={(e) => setBulkEmailData({...bulkEmailData, subject: e.target.value})}
+                      className="input-field w-full"
+                      placeholder="Email subject"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Message
+                    </label>
+                    <textarea
+                      value={bulkEmailData.message}
+                      onChange={(e) => setBulkEmailData({...bulkEmailData, message: e.target.value})}
+                      className="input-field w-full h-32"
+                      placeholder="Email message content"
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <button
+                      onClick={() => setShowBulkEmailModal(false)}
+                      className="btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSendBulkEmail}
+                      className="btn-primary"
+                      disabled={!bulkEmailData.subject || !bulkEmailData.message || loading}
+                    >
+                      {loading ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      Send Bulk Email
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Email Management Tab */}
+      {activeTab === 'email' && (
+        <div className="space-y-6">
+          <h2 className="text-xl font-semibold text-gray-900">Email Management</h2>
+          
+          {/* Email Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Total Sent</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {emailStats?.totalSent || 0}
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-lg bg-blue-500 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                    <polyline points="3 7 12 13 21 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Delivered</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {emailStats?.totalDelivered || 0}
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-lg bg-green-500 flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Opened</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {emailStats?.totalOpened || 0}
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-lg bg-yellow-500 flex items-center justify-center">
+                  <Eye className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="card p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Bounced</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {emailStats?.totalBounced || 0}
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-lg bg-red-500 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="15" y1="9" x2="9" y2="15" />
+                    <line x1="9" y1="9" x2="15" y2="15" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Email Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Email Testing</h3>
+              <p className="text-gray-600 mb-4">
+                Send test emails to verify your email configuration is working correctly.
+              </p>
+              <button
+                onClick={() => setShowTestEmailModal(true)}
+                className="btn-primary"
+              >
+                Send Test Email
+              </button>
+            </div>
+            
+            <div className="card p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Bulk Notifications</h3>
+              <p className="text-gray-600 mb-4">
+                Send notifications to all users of a specific role type.
+              </p>
+              <button
+                onClick={() => setShowBulkEmailModal(true)}
+                className="btn-primary"
+              >
+                Send Bulk Email
+              </button>
+            </div>
+          </div>
+
+          {/* Email Templates */}
+          <div className="card p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Email Templates</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-2">Role Application Submitted</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Sent when a user submits a role application
+                </p>
+                <div className="text-xs text-gray-500">
+                  <p>• Confirmation of application receipt</p>
+                  <p>• Expected review timeline</p>
+                  <p>• Contact information</p>
+                </div>
+              </div>
+              
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-2">Role Application Approved</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Sent when a role application is approved
+                </p>
+                <div className="text-xs text-gray-500">
+                  <p>• Congratulations message</p>
+                  <p>• Dashboard access link</p>
+                  <p>• Next steps guidance</p>
+                </div>
+              </div>
+              
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-2">Role Application Rejected</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Sent when a role application is rejected
+                </p>
+                <div className="text-xs text-gray-500">
+                  <p>• Rejection reason</p>
+                  <p>• Improvement suggestions</p>
+                  <p>• Re-application guidance</p>
+                </div>
+              </div>
+              
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-2">Account Status Changed</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Sent when account status changes
+                </p>
+                <div className="text-xs text-gray-500">
+                  <p>• Status update notification</p>
+                  <p>• Reason for change</p>
+                  <p>• Action required</p>
+                </div>
+              </div>
+              
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-2">Welcome Email</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Sent to new role users
+                </p>
+                <div className="text-xs text-gray-500">
+                  <p>• Welcome message</p>
+                  <p>• Getting started guide</p>
+                  <p>• Dashboard access</p>
+                </div>
+              </div>
+              
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-2">Custom Notification</h4>
+                <p className="text-sm text-gray-600 mb-3">
+                  Admin-created bulk notifications
+                </p>
+                <div className="text-xs text-gray-500">
+                  <p>• Custom subject and message</p>
+                  <p>• Role-specific targeting</p>
+                  <p>• Flexible content</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Email Statistics by Role */}
+          <div className="card p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Email Statistics by Role</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-3">Vendors</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Sent:</span>
+                    <span className="font-medium">{emailStats?.byRole?.vendor?.sent || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Delivered:</span>
+                    <span className="font-medium">{emailStats?.byRole?.vendor?.delivered || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Opened:</span>
+                    <span className="font-medium">{emailStats?.byRole?.vendor?.opened || 0}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-3">Counselors</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Sent:</span>
+                    <span className="font-medium">{emailStats?.byRole?.counselor?.sent || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Delivered:</span>
+                    <span className="font-medium">{emailStats?.byRole?.counselor?.delivered || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Opened:</span>
+                    <span className="font-medium">{emailStats?.byRole?.counselor?.opened || 0}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="border rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-3">Community Managers</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Sent:</span>
+                    <span className="font-medium">{emailStats?.byRole?.community?.sent || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Delivered:</span>
+                    <span className="font-medium">{emailStats?.byRole?.community?.delivered || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Opened:</span>
+                    <span className="font-medium">{emailStats?.byRole?.community?.opened || 0}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Role Approval Modal */}
+      {showRoleApprovalModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Approve Role Application</h3>
+              <button
+                onClick={() => setShowRoleApprovalModal(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="mb-6 text-gray-700">
+              Are you sure you want to approve this role application?
+              <div className="mt-2 text-sm text-blue-600 bg-blue-50 p-2 rounded">
+                <strong>Note:</strong> An email with login credentials will be sent to the applicant. 
+                Please ask them to check their spam/junk folder if they don't receive the email.
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setShowRoleApprovalModal(null)}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await handleRoleRequestAction(showRoleApprovalModal, 'approve');
+                    setShowRoleApprovalModal(null);
+                  } catch (error) {
+                    console.error('Approval failed:', error);
+                  }
+                }}
+                className="btn-primary"
+                disabled={loading}
+              >
+                {loading ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Approve
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Role Rejection Modal */}
+      {showRoleRejectionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Reject Role Application</h3>
+              <button
+                onClick={() => setShowRoleRejectionModal(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Rejection Reason *
+              </label>
+              <textarea
+                value={rejectionReason}
+                onChange={e => setRejectionReason(e.target.value)}
+                className="input-field w-full h-24"
+                placeholder="Please provide a reason for rejection..."
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setShowRoleRejectionModal(null)}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  handleRoleRequestAction(showRoleRejectionModal, 'reject', rejectionReason);
+                  setShowRoleRejectionModal(null);
+                  setRejectionReason('');
+                }}
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                disabled={!rejectionReason.trim() || loading}
+              >
+                {loading ? <Loader className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Reject
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

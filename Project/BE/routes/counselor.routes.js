@@ -1,26 +1,34 @@
 const express = require('express');
 const router = express.Router();
-const Counselor = require('../counselor.schema');
+const counselorController = require('../counselor.controller');
+const auth = require('../middleware/auth');
 
-// Add counselor
-router.post('/', async (req, res) => {
-  res.json(await new Counselor(req.body).save());
-});
-// List/search counselors
-router.get('/', async (req, res) => {
-  res.json(await Counselor.find());
-});
-// Get counselor details
-router.get('/:id', async (req, res) => {
-  res.json(await Counselor.findById(req.params.id));
-});
-// Update counselor
-router.put('/:id', async (req, res) => {
-  res.json(await Counselor.findByIdAndUpdate(req.params.id, req.body, { new: true }));
-});
-// Delete counselor
-router.delete('/:id', async (req, res) => {
-  res.json(await Counselor.findByIdAndDelete(req.params.id));
-});
+// Public routes
+router.get('/all', counselorController.getAllCounselors);
+router.get('/:counselorId', counselorController.getCounselorById);
+router.get('/user/:userId', counselorController.getCounselorByUserId);
+
+// Protected routes (require authentication)
+router.use(auth);
+
+// Create counselor profile
+router.post('/', counselorController.createCounselor);
+
+// Update counselor profile
+router.put('/:counselorId', counselorController.updateCounselor);
+
+// Update counselor status (admin only)
+router.patch('/:counselorId/status', counselorController.updateCounselorStatus);
+
+// Time slot management
+router.post('/:counselorId/time-slots', counselorController.addTimeSlot);
+router.put('/:counselorId/time-slots/:slotId', counselorController.updateTimeSlot);
+router.delete('/:counselorId/time-slots/:slotId', counselorController.deleteTimeSlot);
+
+// Analytics
+router.get('/:counselorId/analytics', counselorController.getCounselorAnalytics);
+
+// Delete counselor (admin only)
+router.delete('/:counselorId', counselorController.deleteCounselor);
 
 module.exports = router; 

@@ -23,7 +23,7 @@ const UserSchema = new Schema({
   status: { type: String, enum: ['active', 'pending', 'suspended', 'verified'], default: 'pending' },
   isPremium: { type: Boolean, default: false },
   profileComplete: { type: Boolean, default: false },
-  role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  role: { type: String, enum: ['user', 'admin', 'vendor', 'counselor', 'community'], default: 'user' },
   compatibilityScore: Number,
   verificationStatus: String,
   lastActive: String

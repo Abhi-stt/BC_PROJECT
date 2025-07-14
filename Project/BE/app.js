@@ -22,6 +22,10 @@ const eventRoutes = require('./routes/event.routes');
 const adminRoutes = require('./routes/admin.routes');
 const announcementRoutes = require('./routes/announcement.routes');
 const supportRoutes = require('./routes/support.routes');
+const vendorRoutes = require('./routes/vendor.routes');
+const requestRoutes = require('./routes/request.routes');
+const communityRoutes = require('./routes/community.routes');
+const emailRoutes = require('./routes/email.routes');
 const { setIO } = require('./socket');
 
 const allowedOrigins = [
@@ -103,6 +107,10 @@ app.use('/api/events', eventRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/vendors', vendorRoutes);
+app.use('/api/requests', requestRoutes);
+app.use('/api/community', communityRoutes);
+app.use('/api/email', emailRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

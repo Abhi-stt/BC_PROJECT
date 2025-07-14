@@ -15,9 +15,12 @@ import {
   Clock,
   Shield,
   Award,
-  X
+  X,
+  UserPlus,
+  Building
 } from 'lucide-react';
 import api from '../services/api';
+import { requestAPI } from '../services/api';
 
 interface Service {
   id: string;
@@ -170,6 +173,17 @@ const Services: React.FC = () => {
     services: ['']
   });
   const [submitting, setSubmitting] = useState(false);
+  
+  // Vendor application state
+  const [showVendorApplication, setShowVendorApplication] = useState(false);
+  const [vendorApplication, setVendorApplication] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    roleRequested: 'vendor',
+    message: ''
+  });
+  const [submittingVendor, setSubmittingVendor] = useState(false);
 
   const categories = [
     { id: 'all', label: 'All Services', icon: Heart },
@@ -240,6 +254,32 @@ const Services: React.FC = () => {
 
   const handleCallNow = (service: Service) => {
     window.open(`tel:${service.contact.phone}`, '_blank');
+  };
+
+  const handleVendorApplication = async () => {
+    if (!vendorApplication.name || !vendorApplication.email || !vendorApplication.phone) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    setSubmittingVendor(true);
+    try {
+      await requestAPI.createRequest(vendorApplication);
+      alert('Vendor application submitted successfully! We will review your application and contact you soon.');
+      setShowVendorApplication(false);
+      setVendorApplication({
+        name: '',
+        email: '',
+        phone: '',
+        roleRequested: 'vendor',
+        message: ''
+      });
+    } catch (err: any) {
+      alert('Failed to submit application. Please try again.');
+      console.error('Error submitting vendor application:', err);
+    } finally {
+      setSubmittingVendor(false);
+    }
   };
 
   return (
@@ -532,12 +572,21 @@ const Services: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Wedding Services</h1>
           <p className="text-gray-600">Find trusted vendors for your perfect wedding</p>
         </div>
-        <button 
-          onClick={() => setShowListService(true)}
-          className="btn-primary"
-        >
-          List Your Service
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setShowVendorApplication(true)}
+            className="btn-outline flex items-center gap-2"
+          >
+            <Building className="w-4 h-4" />
+            Apply to Join as Vendor
+          </button>
+          <button 
+            onClick={() => setShowListService(true)}
+            className="btn-primary"
+          >
+            List Your Service
+          </button>
+        </div>
       </div>
 
       {/* Featured Services */}
@@ -752,6 +801,114 @@ const Services: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Vendor Application Modal */}
+      {showVendorApplication && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Apply to Join as Vendor</h3>
+              <button 
+                onClick={() => setShowVendorApplication(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Building className="w-5 h-5 text-blue-600" />
+                  <h4 className="font-medium text-blue-900">Become a Wedding Vendor</h4>
+                </div>
+                <p className="text-sm text-blue-700">
+                  Join our trusted network of wedding vendors and reach thousands of couples planning their special day. 
+                  We offer photography, catering, decoration, music, transportation, and more services.
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Full Name *
+                  </label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    placeholder="Enter your full name"
+                    value={vendorApplication.name}
+                    onChange={e => setVendorApplication({ ...vendorApplication, name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address *
+                  </label>
+                  <input 
+                    type="email" 
+                    className="input-field" 
+                    placeholder="your@email.com"
+                    value={vendorApplication.email}
+                    onChange={e => setVendorApplication({ ...vendorApplication, email: e.target.value })}
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone Number *
+                </label>
+                <input 
+                  type="tel" 
+                  className="input-field" 
+                  placeholder="+91 98765 43210"
+                  value={vendorApplication.phone}
+                  onChange={e => setVendorApplication({ ...vendorApplication, phone: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tell us about your business
+                </label>
+                <textarea 
+                  className="input-field h-32 resize-none" 
+                  placeholder="Describe your business, services offered, experience, and why you'd like to join our platform..."
+                  value={vendorApplication.message}
+                  onChange={e => setVendorApplication({ ...vendorApplication, message: e.target.value })}
+                ></textarea>
+              </div>
+              
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-2">What happens next?</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• We'll review your application within 2-3 business days</li>
+                  <li>• If approved, we'll create your vendor account</li>
+                  <li>• You'll receive login credentials via email</li>
+                  <li>• Start listing your services and connecting with couples</li>
+                </ul>
+              </div>
+              
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleVendorApplication}
+                  className="btn-primary flex-1"
+                  disabled={submittingVendor}
+                >
+                  {submittingVendor ? 'Submitting...' : 'Submit Application'}
+                </button>
+                <button 
+                  onClick={() => setShowVendorApplication(false)}
+                  className="btn-outline flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

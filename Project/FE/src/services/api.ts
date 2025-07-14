@@ -587,4 +587,450 @@ export const supportAPI = {
   }
 };
 
+// Vendor API
+export const vendorAPI = {
+  // Admin functions
+  getAllVendors: async () => {
+    try {
+      const response = await api.get('/vendors/admin/all');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching vendors:', error);
+      throw new Error('Failed to fetch vendors');
+    }
+  },
+  
+  getVendorRequests: async () => {
+    try {
+      const response = await api.get('/vendors/admin/requests');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching vendor requests:', error);
+      throw new Error('Failed to fetch vendor requests');
+    }
+  },
+  
+  approveVendorRequest: async (requestId: string, vendorData: any) => {
+    try {
+      const response = await api.post(`/vendors/admin/requests/${requestId}/approve`, vendorData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error approving vendor request:', error);
+      throw new Error('Failed to approve vendor request');
+    }
+  },
+  
+  rejectVendorRequest: async (requestId: string, rejectionReason: string) => {
+    try {
+      const response = await api.post(`/vendors/admin/requests/${requestId}/reject`, { rejectionReason });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error rejecting vendor request:', error);
+      throw new Error('Failed to reject vendor request');
+    }
+  },
+  
+  updateVendorStatus: async (vendorId: string, status: string) => {
+    try {
+      const response = await api.put(`/vendors/admin/${vendorId}/status`, { status });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error updating vendor status:', error);
+      throw new Error('Failed to update vendor status');
+    }
+  },
+  
+  // Vendor functions
+  getVendorProfile: async () => {
+    try {
+      const response = await api.get('/vendors/profile');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching vendor profile:', error);
+      throw new Error('Failed to fetch vendor profile');
+    }
+  },
+  
+  createVendorProfile: async (profileData: any) => {
+    try {
+      const response = await api.post('/vendors/profile', profileData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating vendor profile:', error);
+      throw new Error('Failed to create vendor profile');
+    }
+  },
+  
+  updateVendorProfile: async (profileData: any) => {
+    try {
+      const response = await api.put('/vendors/profile', profileData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error updating vendor profile:', error);
+      throw new Error('Failed to update vendor profile');
+    }
+  },
+  
+  getVendorAnalytics: async () => {
+    try {
+      const response = await api.get('/vendors/analytics');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching vendor analytics:', error);
+      throw new Error('Failed to fetch vendor analytics');
+    }
+  }
+};
+
+// Request API
+export const requestAPI = {
+  createRequest: async (data: any) => {
+    try {
+      const response = await api.post('/requests', data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating request:', error);
+      throw new Error('Failed to submit application');
+    }
+  },
+  submitRequest: async (requestData: any) => {
+    try {
+      const response = await api.post('/requests/submit', requestData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error submitting request:', error);
+      throw new Error('Failed to submit request');
+    }
+  },
+  
+  checkRequestStatus: async (email: string, roleRequested: string) => {
+    try {
+      const response = await api.get('/requests/status', { 
+        params: { email, roleRequested } 
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error checking request status:', error);
+      throw new Error('Failed to check request status');
+    }
+  },
+  
+  getAllRequests: async (filters?: any) => {
+    try {
+      const response = await api.get('/requests/admin/all', { params: filters });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching requests:', error);
+      throw new Error('Failed to fetch requests');
+    }
+  },
+  
+  getRequestStats: async () => {
+    try {
+      const response = await api.get('/requests/admin/stats');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching request stats:', error);
+      throw new Error('Failed to fetch request stats');
+    }
+  },
+  
+  getRequestById: async (requestId: string) => {
+    try {
+      const response = await api.get(`/requests/admin/${requestId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching request:', error);
+      throw new Error('Failed to fetch request');
+    }
+  },
+  approveRequest: async (requestId: string, data: any) => {
+    try {
+      const response = await api.patch(`/requests/${requestId}/approve`, data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error approving request:', error);
+      throw new Error('Failed to approve request');
+    }
+  },
+  rejectRequest: async (requestId: string, data: any) => {
+    try {
+      const response = await api.patch(`/requests/${requestId}/reject`, data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error rejecting request:', error);
+      throw new Error('Failed to reject request');
+    }
+  }
+};
+
+// Counselor API
+export const counselorAPI = {
+  // Admin functions
+  getAllCounselors: async () => {
+    try {
+      const response = await api.get('/counselors/all');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching counselors:', error);
+      throw new Error('Failed to fetch counselors');
+    }
+  },
+  
+  getCounselorById: async (counselorId: string) => {
+    try {
+      const response = await api.get(`/counselors/${counselorId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching counselor:', error);
+      throw new Error('Failed to fetch counselor');
+    }
+  },
+  
+  updateCounselorStatus: async (counselorId: string, status: string) => {
+    try {
+      const response = await api.patch(`/counselors/${counselorId}/status`, { status });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error updating counselor status:', error);
+      throw new Error('Failed to update counselor status');
+    }
+  },
+  
+  // Counselor functions
+  getCounselorProfile: async (counselorId: string) => {
+    try {
+      const response = await api.get(`/counselors/${counselorId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching counselor profile:', error);
+      throw new Error('Failed to fetch counselor profile');
+    }
+  },
+  
+  createCounselorProfile: async (profileData: any) => {
+    try {
+      const response = await api.post('/counselors', profileData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating counselor profile:', error);
+      throw new Error('Failed to create counselor profile');
+    }
+  },
+  
+  updateCounselorProfile: async (counselorId: string, profileData: any) => {
+    try {
+      const response = await api.put(`/counselors/${counselorId}`, profileData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error updating counselor profile:', error);
+      throw new Error('Failed to update counselor profile');
+    }
+  },
+  
+  getCounselorAnalytics: async (counselorId: string) => {
+    try {
+      const response = await api.get(`/counselors/${counselorId}/analytics`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching counselor analytics:', error);
+      throw new Error('Failed to fetch counselor analytics');
+    }
+  },
+  
+  // Time slot management
+  addTimeSlot: async (counselorId: string, timeSlotData: any) => {
+    try {
+      const response = await api.post(`/counselors/${counselorId}/time-slots`, timeSlotData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error adding time slot:', error);
+      throw new Error('Failed to add time slot');
+    }
+  },
+  
+  updateTimeSlot: async (counselorId: string, slotId: string, timeSlotData: any) => {
+    try {
+      const response = await api.put(`/counselors/${counselorId}/time-slots/${slotId}`, timeSlotData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error updating time slot:', error);
+      throw new Error('Failed to update time slot');
+    }
+  },
+  
+  deleteTimeSlot: async (counselorId: string, slotId: string) => {
+    try {
+      const response = await api.delete(`/counselors/${counselorId}/time-slots/${slotId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error deleting time slot:', error);
+      throw new Error('Failed to delete time slot');
+    }
+  }
+};
+
+// Community Management API
+export const communityManagementAPI = {
+  // Admin functions
+  getAllCommunities: async () => {
+    try {
+      const response = await api.get('/community/all');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching communities:', error);
+      throw new Error('Failed to fetch communities');
+    }
+  },
+  
+  getCommunityById: async (communityId: string) => {
+    try {
+      const response = await api.get(`/community/${communityId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching community:', error);
+      throw new Error('Failed to fetch community');
+    }
+  },
+  
+  updateCommunityStatus: async (communityId: string, status: string) => {
+    try {
+      const response = await api.patch(`/community/${communityId}/status`, { status });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error updating community status:', error);
+      throw new Error('Failed to update community status');
+    }
+  },
+  
+  // Community functions
+  getCommunityProfile: async (communityId: string) => {
+    try {
+      const response = await api.get(`/community/${communityId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching community profile:', error);
+      throw new Error('Failed to fetch community profile');
+    }
+  },
+  
+  createCommunityProfile: async (profileData: any) => {
+    try {
+      const response = await api.post('/community', profileData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating community profile:', error);
+      throw new Error('Failed to create community profile');
+    }
+  },
+  
+  updateCommunityProfile: async (communityId: string, profileData: any) => {
+    try {
+      const response = await api.put(`/community/${communityId}`, profileData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error updating community profile:', error);
+      throw new Error('Failed to update community profile');
+    }
+  },
+  
+  getCommunityAnalytics: async (communityId: string) => {
+    try {
+      const response = await api.get(`/community/${communityId}/analytics`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching community analytics:', error);
+      throw new Error('Failed to fetch community analytics');
+    }
+  },
+  
+  getCommunityMembers: async (communityId: string, filters?: any) => {
+    try {
+      const response = await api.get(`/community/${communityId}/members`, { params: filters });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching community members:', error);
+      throw new Error('Failed to fetch community members');
+    }
+  },
+  
+  // Event management
+  addEvent: async (communityId: string, eventData: any) => {
+    try {
+      const response = await api.post(`/community/${communityId}/events`, eventData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error adding event:', error);
+      throw new Error('Failed to add event');
+    }
+  },
+  
+  updateEvent: async (communityId: string, eventId: string, eventData: any) => {
+    try {
+      const response = await api.put(`/community/${communityId}/events/${eventId}`, eventData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error updating event:', error);
+      throw new Error('Failed to update event');
+    }
+  },
+  
+  deleteEvent: async (communityId: string, eventId: string) => {
+    try {
+      const response = await api.delete(`/community/${communityId}/events/${eventId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error deleting event:', error);
+      throw new Error('Failed to delete event');
+    }
+  }
+};
+
+// Email API
+export const emailAPI = {
+  // Send test email
+  sendTestEmail: async (email: string) => {
+    try {
+      const response = await api.post('/email/test', { email });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error sending test email:', error);
+      throw new Error('Failed to send test email');
+    }
+  },
+  
+  // Send welcome email
+  sendWelcomeEmail: async (userId: string, roleType: string) => {
+    try {
+      const response = await api.post('/email/welcome', { userId, roleType });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error sending welcome email:', error);
+      throw new Error('Failed to send welcome email');
+    }
+  },
+  
+  // Send bulk notification
+  sendBulkNotification: async (roleType: string, subject: string, message: string, filters?: any) => {
+    try {
+      const response = await api.post('/email/bulk', { roleType, subject, message, filters });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error sending bulk notification:', error);
+      throw new Error('Failed to send bulk notification');
+    }
+  },
+  
+  // Get email statistics
+  getEmailStats: async () => {
+    try {
+      const response = await api.get('/email/stats');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error fetching email stats:', error);
+      throw new Error('Failed to fetch email statistics');
+    }
+  }
+};
+
 export default api; 
