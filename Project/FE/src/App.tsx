@@ -63,6 +63,10 @@ function App() {
                 <Route path="support" element={<Support />} />
               </Route>
 
+              {/* Dynamic routes for counselor and community dashboards by ID */}
+              <Route path="/app/counselor/:counselorId" element={<CounselorDashboard />} />
+              <Route path="/app/community/:communityId" element={<CommunityDashboard />} />
+
               {/* Vendor-specific routes with vendor layout */}
               <Route path="/vendor" element={<VendorLayout />}>
                 <Route path="onboarding" element={<VendorOnboarding />} />

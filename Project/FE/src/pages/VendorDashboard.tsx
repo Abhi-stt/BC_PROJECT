@@ -58,18 +58,64 @@ interface Query {
   reply?: string; // Added for replies
 }
 
+interface Booking {
+  id: string;
+  clientName: string;
+  service: string;
+  date: string;
+  status: string;
+  amount: number;
+  notes: string;
+}
+
+interface Review {
+  id: string;
+  clientName: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
+
+interface Earning {
+  id: string;
+  amount: number;
+  date: string;
+  source: string;
+  notes: string;
+}
+
+interface Document {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  uploadedAt: string;
+}
+
+interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+}
+
 const VendorDashboard: React.FC = () => {
   const location = useLocation();
   const { vendorId: paramVendorId } = useParams<{ vendorId: string }>();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  // Declare searchParams only once
+  const searchParams = new URLSearchParams(location.search);
+  const urlTab = searchParams.get('tab');
+  const vendorId = searchParams.get('vendorId') || paramVendorId || user?.id;
+  const [activeTab, setActiveTab] = React.useState(urlTab || 'overview');
+
+  // Keep activeTab in sync with URL
+  React.useEffect(() => {
+    setActiveTab(urlTab || 'overview');
+  }, [urlTab]);
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Support admin viewing any vendor dashboard
-  const searchParams = new URLSearchParams(location.search);
-  const vendorId = searchParams.get('vendorId') || paramVendorId || user?.id;
 
   // Profile state
   const [profile, setProfile] = useState({
@@ -123,6 +169,23 @@ const VendorDashboard: React.FC = () => {
   const [replyingQuery, setReplyingQuery] = useState<Query | null>(null);
   const [replyText, setReplyText] = useState('');
 
+  // Bookings, Reviews, Earnings, Documents, Achievements state
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [earnings, setEarnings] = useState<Earning[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+
+  // Add state for real and mock data for each tab
+  const [realPackages, setRealPackages] = useState<ServicePackage[]>([]);
+  const [realLeads, setRealLeads] = useState<ClientLead[]>([]);
+  const [realQueries, setRealQueries] = useState<Query[]>([]);
+  const [realBookings, setRealBookings] = useState<Booking[]>([]);
+  const [realReviews, setRealReviews] = useState<Review[]>([]);
+  const [realEarnings, setRealEarnings] = useState<Earning[]>([]);
+  const [realDocuments, setRealDocuments] = useState<Document[]>([]);
+  const [realAchievements, setRealAchievements] = useState<Achievement[]>([]);
+
   useEffect(() => {
     // Load all vendor data
     const fetchData = async () => {
@@ -140,8 +203,38 @@ const VendorDashboard: React.FC = () => {
         setServicePackages(packages || []);
         setClientLeads(leads || []);
         setQueries(queriesData || []);
+        // TODO: fetch bookings, reviews, earnings, documents, achievements from API if available
       } catch (error) {
-        alert('Failed to load vendor data');
+        // Fallback to mock data
+        setProfile({
+          businessName: 'Sample Vendor',
+          services: ['Photography', 'Catering'],
+          city: 'Sample City',
+          location: 'Sample Location',
+          description: 'Sample vendor description',
+          phone: '1234567890',
+          email: 'vendor@example.com',
+          website: 'https://vendor.com',
+          rating: 4.5,
+          totalReviews: 10,
+          isVerified: true
+        });
+        setAnalytics({
+          totalLeads: 2,
+          convertedLeads: 1,
+          totalRevenue: 35000,
+          averageRating: 4.5,
+          totalBookings: 2,
+          monthlyGrowth: 10
+        });
+        setServicePackages(sampleVendorPackages);
+        setClientLeads(sampleVendorLeads.map(lead => ({ ...lead, status: lead.status as 'new' | 'contacted' | 'quoted' | 'booked' | 'lost' })));
+        setQueries(sampleVendorQueries.map(query => ({ ...query, status: query.status as 'unread' | 'read' | 'replied' })));
+        setBookings(sampleVendorBookings);
+        setReviews(sampleVendorReviews);
+        setEarnings(sampleVendorEarnings);
+        setDocuments(sampleVendorDocuments);
+        setAchievements(sampleVendorAchievements);
       } finally {
         setLoading(false);
       }
@@ -168,6 +261,30 @@ const VendorDashboard: React.FC = () => {
       socket.off('vendorQueryCreated');
     };
   }, [vendorId]);
+
+  // Add useEffect to load real data for each tab on tab switch
+  useEffect(() => {
+    const fetchTabData = async () => {
+      if (activeTab === 'services') {
+        setRealPackages(await vendorAPI.getServicePackages());
+      } else if (activeTab === 'leads') {
+        setRealLeads(await vendorAPI.getClientLeads());
+      } else if (activeTab === 'queries') {
+        setRealQueries(await vendorAPI.getQueries());
+      } else if (activeTab === 'bookings') {
+        setRealBookings(await vendorAPI.getBookings());
+      } else if (activeTab === 'reviews') {
+        setRealReviews(await vendorAPI.getReviews());
+      } else if (activeTab === 'earnings') {
+        setRealEarnings(await vendorAPI.getEarnings());
+      } else if (activeTab === 'documents') {
+        setRealDocuments(await vendorAPI.getDocuments());
+      } else if (activeTab === 'achievements') {
+        setRealAchievements(await vendorAPI.getAchievements());
+      }
+    };
+    fetchTabData();
+  }, [activeTab]);
 
   // Update profile
   const handleUpdateProfile = async () => {
@@ -358,7 +475,12 @@ const VendorDashboard: React.FC = () => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    const params = new URLSearchParams(location.search);
+                    params.set('tab', tab.id);
+                    window.history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
+                    setActiveTab(tab.id);
+                  }}
                   className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === tab.id
                       ? 'border-saffron text-saffron'
@@ -458,222 +580,22 @@ const VendorDashboard: React.FC = () => {
 
         {activeTab === 'services' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">Service Packages</h2>
-              <button
-                onClick={() => setShowAddPackageModal(true)}
-                className="btn-primary flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Add Package
-              </button>
-            </div>
-            <div className="flex flex-col md:flex-row md:items-center md:gap-4 gap-2">
-              <select
-                className="input-field w-40"
-                value={packageStatusFilter}
-                onChange={e => setPackageStatusFilter(e.target.value)}
-              >
-                <option value="all">All</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-              <input
-                type="text"
-                className="input-field flex-1"
-                placeholder="Search by title..."
-                value={packageSearch}
-                onChange={e => setPackageSearch(e.target.value)}
-              />
-            </div>
+            <h2 className="text-xl font-semibold text-gray-900">Service Packages</h2>
+            {/* Render realPackages */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredPackages.map(pkg => (
+              {realPackages.map(pkg => (
                 <div key={pkg.id} className="bg-white rounded-lg shadow p-6">
                   <div className="flex items-start justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900">{pkg.title}</h3>
-                    <div className="flex gap-2">
-                      <button className="text-gray-400 hover:text-gray-600" onClick={() => handleEditPackage(pkg)} title="Edit">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button className="text-gray-400 hover:text-red-600" onClick={() => setDeletePackageId(pkg.id)} title="Delete">
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
                   </div>
                   <p className="text-gray-600 mb-4">{pkg.description}</p>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-saffron">₹{pkg.price.toLocaleString()}</span>
-                    <button
-                      className={`px-2 py-1 rounded-full text-xs font-medium focus:outline-none ${pkg.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-                      onClick={() => handleToggleActive(pkg.id)}
-                    >
-                      {pkg.isActive ? 'Active' : 'Inactive'}
-                    </button>
+                    <span className="text-2xl font-bold text-saffron">₹{pkg.price?.toLocaleString?.() ?? pkg.price}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium focus:outline-none ${pkg.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{pkg.isActive ? 'Active' : 'Inactive'}</span>
                   </div>
                 </div>
               ))}
             </div>
-            {/* Add Package Modal (already present) */}
-            {showAddPackageModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Add Service Package</h3>
-                    <button
-                      onClick={() => setShowAddPackageModal(false)}
-                      className="text-gray-500 hover:text-gray-700"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                      <input
-                        type="text"
-                        value={newPackage.title}
-                        onChange={e => setNewPackage({ ...newPackage, title: e.target.value })}
-                        className="input-field"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                      <textarea
-                        value={newPackage.description}
-                        onChange={e => setNewPackage({ ...newPackage, description: e.target.value })}
-                        className="input-field h-24"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Price (INR)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={newPackage.price}
-                        onChange={e => setNewPackage({ ...newPackage, price: e.target.value })}
-                        className="input-field"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={newPackage.isActive}
-                        onChange={e => setNewPackage({ ...newPackage, isActive: e.target.checked })}
-                        className="rounded border-gray-300 text-saffron focus:ring-saffron"
-                        id="isActive"
-                      />
-                      <label htmlFor="isActive" className="text-sm text-gray-700">Active</label>
-                    </div>
-                    <div className="flex gap-2 mt-4">
-                      <button
-                        onClick={handleAddServicePackage}
-                        className="btn-primary flex-1"
-                      >
-                        Add Package
-                      </button>
-                      <button
-                        onClick={() => setShowAddPackageModal(false)}
-                        className="btn-outline flex-1"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            {/* Edit Package Modal */}
-            {showEditPackageModal && editPackage && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Edit Service Package</h3>
-                    <button
-                      onClick={() => setShowEditPackageModal(false)}
-                      className="text-gray-500 hover:text-gray-700"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                      <input
-                        type="text"
-                        value={editPackage.title}
-                        onChange={e => setEditPackage({ ...editPackage, title: e.target.value })}
-                        className="input-field"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                      <textarea
-                        value={editPackage.description}
-                        onChange={e => setEditPackage({ ...editPackage, description: e.target.value })}
-                        className="input-field h-24"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Price (INR)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={editPackage.price}
-                        onChange={e => setEditPackage({ ...editPackage, price: Number(e.target.value) })}
-                        className="input-field"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={editPackage.isActive}
-                        onChange={e => setEditPackage({ ...editPackage, isActive: e.target.checked })}
-                        className="rounded border-gray-300 text-saffron focus:ring-saffron"
-                        id="editIsActive"
-                      />
-                      <label htmlFor="editIsActive" className="text-sm text-gray-700">Active</label>
-                    </div>
-                    <div className="flex gap-2 mt-4">
-                      <button
-                        onClick={handleUpdatePackage}
-                        className="btn-primary flex-1"
-                      >
-                        Update Package
-                      </button>
-                      <button
-                        onClick={() => setShowEditPackageModal(false)}
-                        className="btn-outline flex-1"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            {/* Delete Confirmation Modal */}
-            {deletePackageId && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg p-6 w-full max-w-sm">
-                  <h3 className="text-lg font-semibold mb-4">Delete Package?</h3>
-                  <p className="mb-6">Are you sure you want to delete this package? This action cannot be undone.</p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleDeletePackage}
-                      className="btn-danger flex-1"
-                    >
-                      Delete
-                    </button>
-                    <button
-                      onClick={() => setDeletePackageId(null)}
-                      className="btn-outline flex-1"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -705,7 +627,7 @@ const VendorDashboard: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {clientLeads.map(lead => (
+                  {realLeads.map(lead => (
                     <tr key={lead.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4">
                         <div>
@@ -769,7 +691,7 @@ const VendorDashboard: React.FC = () => {
               </div>
             </div>
             <div className="space-y-4">
-              {queries.map(query => (
+              {realQueries.map(query => (
                 <div key={query.id} className="bg-white rounded-lg shadow p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -842,6 +764,177 @@ const VendorDashboard: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+        {activeTab === 'bookings' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900">Bookings</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white rounded-lg shadow">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {realBookings.map(b => (
+                    <tr key={b.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">{b.clientName}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{b.service}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{b.date}</td>
+                      <td className="px-6 py-4 whitespace-nowrap capitalize">{b.status}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">₹{b.amount.toLocaleString()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{b.notes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        {activeTab === 'reviews' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900">Reviews</h2>
+            <ul className="bg-white rounded-lg shadow divide-y">
+              {realReviews.map(r => (
+                <li key={r.id} className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                  <div className="flex flex-col">
+                    <span className="font-medium text-gray-900">{r.clientName}</span>
+                    <span className="text-yellow-500 text-lg">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
+                  </div>
+                  <div className="flex-1 text-gray-700 md:mx-4">{r.comment}</div>
+                  <span className="text-xs text-gray-400 md:text-right">{r.date}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {activeTab === 'earnings' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900">Earnings</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white rounded-lg shadow">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {realEarnings.map(e => (
+                    <tr key={e.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">₹{e.amount.toLocaleString()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{e.date}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{e.source}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{e.notes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        {activeTab === 'documents' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900">Documents</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white rounded-lg shadow">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Uploaded At</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Link</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {realDocuments.map(d => (
+                    <tr key={d.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">{d.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{d.type}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{d.uploadedAt}</td>
+                      <td className="px-6 py-4 whitespace-nowrap"><a href={d.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View</a></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        {activeTab === 'achievements' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900">Achievements</h2>
+            <ul className="bg-white rounded-lg shadow divide-y">
+              {realAchievements.map(a => (
+                <li key={a.id} className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                  <div className="flex flex-col">
+                    <span className="font-medium text-gray-900">{a.title}</span>
+                    <span className="text-gray-700">{a.description}</span>
+                  </div>
+                  <span className="text-xs text-gray-400 md:text-right">{a.date}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {activeTab === 'profile' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900">Business Profile</h2>
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <strong>Business Name:</strong> {profile.businessName}
+                </div>
+                <div>
+                  <strong>City:</strong> {profile.city}
+                </div>
+                <div>
+                  <strong>Location:</strong> {profile.location}
+                </div>
+                <div>
+                  <strong>Email:</strong> {profile.email}
+                </div>
+                <div>
+                  <strong>Phone:</strong> {profile.phone}
+                </div>
+                <div>
+                  <strong>Website:</strong> <a href={profile.website} className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">{profile.website}</a>
+                </div>
+                <div className="md:col-span-2">
+                  <strong>Description:</strong> {profile.description}
+                </div>
+                <div>
+                  <strong>Rating:</strong> {profile.rating} ★
+                </div>
+                <div>
+                  <strong>Verified:</strong> {profile.isVerified ? 'Yes' : 'No'}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {activeTab === 'settings' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900">Settings</h2>
+            <div className="bg-white rounded-lg shadow p-6 text-gray-700">
+              <p>Settings functionality coming soon. Here you will be able to update your account, notification preferences, and more.</p>
+            </div>
+          </div>
+        )}
+        {activeTab === 'support' && (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900">Support</h2>
+            <div className="bg-white rounded-lg shadow p-6 text-gray-700">
+              <p>Need help? Contact our support team at <a href="mailto:support@bandhaconnect.com" className="text-blue-600 underline">support@bandhaconnect.com</a> or call 1800-123-4567.</p>
+              <p className="mt-2">Support features and FAQs will be available here soon.</p>
+            </div>
           </div>
         )}
       </main>

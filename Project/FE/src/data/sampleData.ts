@@ -347,52 +347,128 @@ export const announcements = [
 ];
 
 export const sampleVendorPackages = [
-  {
-    id: '1',
-    title: 'Basic Wedding Package',
-    description: 'Essential wedding services including photography and basic decoration',
-    price: 50000,
-    isActive: true
-  },
-  {
-    id: '2',
-    title: 'Premium Wedding Package',
-    description: 'Complete wedding services with premium photography, decoration, and catering',
-    price: 150000,
-    isActive: true
-  }
+  { id: '1', title: 'Gold Package', description: 'Full wedding planning', price: 50000, currency: 'INR', isActive: true },
+  { id: '2', title: 'Silver Package', description: 'Partial planning', price: 30000, currency: 'INR', isActive: true }
 ];
 
 export const sampleVendorLeads = [
-  {
-    id: '1',
-    name: 'Priya Sharma',
-    email: 'priya@example.com',
-    phone: '+91 98765 43210',
-    service: 'Wedding Photography',
-    message: 'Looking for wedding photography services for my wedding in December',
-    status: 'new',
-    createdAt: '2024-01-15T10:30:00Z'
-  },
-  {
-    id: '2',
-    name: 'Rahul Patel',
-    email: 'rahul@example.com',
-    phone: '+91 87654 32109',
-    service: 'Wedding Decoration',
-    message: 'Need decoration services for reception venue',
-    status: 'contacted',
-    createdAt: '2024-01-14T15:45:00Z'
-  }
+  { id: '1', name: 'Alice', email: 'alice@example.com', phone: '1234567890', service: 'Photography', message: 'Looking for a wedding photographer', status: 'new', createdAt: '2024-07-01' },
+  { id: '2', name: 'Bob', email: 'bob@example.com', phone: '9876543210', service: 'Catering', message: 'Need catering for 200 guests', status: 'contacted', createdAt: '2024-07-02' }
 ];
 
 export const sampleVendorQueries = [
-  {
-    id: '1',
-    from: 'amit@example.com',
-    subject: 'Wedding Photography Inquiry',
-    message: 'Hi, I would like to know more about your wedding photography packages and availability.',
-    status: 'unread',
-    createdAt: '2024-01-15T09:00:00Z'
-  }
+  { id: '1', from: 'Charlie', subject: 'Availability', message: 'Are you available on 15th Aug?', status: 'unread', createdAt: '2024-07-03', reply: '' },
+  { id: '2', from: 'Diana', subject: 'Discount', message: 'Can you offer a discount?', status: 'read', createdAt: '2024-07-04', reply: 'We can discuss.' }
+];
+
+export const sampleVendorBookings = [
+  { id: '1', clientName: 'John Doe', service: 'Photography', date: '2024-07-01', status: 'confirmed', amount: 10000, notes: 'Outdoor shoot' },
+  { id: '2', clientName: 'Jane Smith', service: 'Catering', date: '2024-07-10', status: 'pending', amount: 25000, notes: 'Vegetarian menu' }
+];
+
+export const sampleVendorReviews = [
+  { id: '1', clientName: 'John Doe', rating: 5, comment: 'Excellent service!', date: '2024-07-01' },
+  { id: '2', clientName: 'Jane Smith', rating: 4, comment: 'Very good, will recommend.', date: '2024-07-10' }
+];
+
+export const sampleVendorEarnings = [
+  { id: '1', amount: 10000, date: '2024-07-01', source: 'Photography', notes: 'Outdoor shoot' },
+  { id: '2', amount: 25000, date: '2024-07-10', source: 'Catering', notes: 'Vegetarian menu' }
+];
+
+export const sampleVendorDocuments = [
+  { id: '1', name: 'PAN Card', url: 'https://example.com/pan.pdf', type: 'ID Proof', uploadedAt: '2024-06-01' },
+  { id: '2', name: 'GST Certificate', url: 'https://example.com/gst.pdf', type: 'Tax', uploadedAt: '2024-06-10' }
+];
+
+export const sampleVendorAchievements = [
+  { id: '1', title: 'Best Wedding Planner 2023', description: 'Awarded for outstanding service.', date: '2023-12-15' },
+  { id: '2', title: '100+ Weddings Completed', description: 'Milestone achievement.', date: '2024-05-01' }
+];
+
+// Mock data for Counselor Dashboard
+export const sampleCounselorProfile = {
+  name: 'Dr. Anjali Mehta',
+  specialization: 'Marriage & Family Counseling',
+  experience: 12,
+  counselingMethods: ['online', 'offline'],
+  availableCities: ['Mumbai', 'Delhi'],
+  sessionFees: 1500,
+  description: 'Experienced counselor helping couples and families build strong relationships.',
+  phone: '9876543210',
+  email: 'anjali.mehta@counselor.com',
+  rating: 4.8,
+  totalSessions: 320,
+  isVerified: true
+};
+
+export const sampleCounselorAnalytics = {
+  totalSessions: 320,
+  completedSessions: 300,
+  totalRequests: 120,
+  averageRating: 4.8,
+  totalEarnings: 480000,
+  monthlyGrowth: 8.5
+};
+
+export const sampleCounselorTimeSlots = [
+  { id: 'ts1', day: 'Monday', startTime: '10:00', endTime: '13:00', isAvailable: true, sessionType: 'online' },
+  { id: 'ts2', day: 'Wednesday', startTime: '14:00', endTime: '17:00', isAvailable: true, sessionType: 'offline' },
+  { id: 'ts3', day: 'Friday', startTime: '09:00', endTime: '12:00', isAvailable: false, sessionType: 'both' }
+];
+
+export const sampleCounselingRequests = [
+  { id: 'cr1', userId: 'u1', userName: 'Priya Sharma', userEmail: 'priya@email.com', userPhone: '9998887777', issue: 'Premarital counseling', preferredTime: '2024-07-12T10:00:00', sessionType: 'online', status: 'pending', createdAt: '2024-07-10T09:00:00' },
+  { id: 'cr2', userId: 'u2', userName: 'Rahul Verma', userEmail: 'rahul@email.com', userPhone: '8887776666', issue: 'Family conflict', preferredTime: '2024-07-13T15:00:00', sessionType: 'offline', status: 'accepted', createdAt: '2024-07-11T11:00:00' },
+  { id: 'cr3', userId: 'u3', userName: 'Kavya Reddy', userEmail: 'kavya@email.com', userPhone: '7776665555', issue: 'Relationship stress', preferredTime: '2024-07-14T11:00:00', sessionType: 'online', status: 'completed', createdAt: '2024-07-12T10:30:00' }
+];
+
+export const sampleCounselorSessions = [
+  { id: 's1', userId: 'u1', userName: 'Priya Sharma', date: '2024-07-12', time: '10:00', duration: 60, sessionType: 'online', status: 'scheduled', notes: 'First session', rating: 5, feedback: 'Very helpful.' },
+  { id: 's2', userId: 'u2', userName: 'Rahul Verma', date: '2024-07-13', time: '15:00', duration: 45, sessionType: 'offline', status: 'completed', notes: 'Follow-up session', rating: 4, feedback: 'Good advice.' },
+  { id: 's3', userId: 'u3', userName: 'Kavya Reddy', date: '2024-07-14', time: '11:00', duration: 30, sessionType: 'online', status: 'completed', notes: 'Final session', rating: 5, feedback: 'Excellent support.' }
+];
+
+// Mock data for Community Dashboard
+export const sampleCommunityProfile = {
+  communityName: 'Gujarati Samaj Mumbai',
+  religion: 'Hindu',
+  region: 'Maharashtra',
+  rules: 'Respect all members. No spam. Only genuine matrimonial interests.',
+  description: 'A vibrant community for Gujarati families in Mumbai to connect, celebrate, and find matches.',
+  totalMembers: 120,
+  activeMembers: 98,
+  totalMatches: 34,
+  isVerified: true
+};
+
+export const sampleCommunityAnalytics = {
+  totalMembers: 120,
+  activeMembers: 98,
+  totalMatches: 34,
+  successfulMatches: 20,
+  pendingProfiles: 5,
+  totalEvents: 8,
+  monthlyGrowth: 4.2
+};
+
+export const sampleCommunityMembers = [
+  { id: 'm1', name: 'Amit Patel', email: 'amit.patel@email.com', phone: '9991112222', profileStatus: 'approved', joinDate: '2024-06-01', isActive: true },
+  { id: 'm2', name: 'Sneha Shah', email: 'sneha.shah@email.com', phone: '8882223333', profileStatus: 'pending', joinDate: '2024-06-10', isActive: false },
+  { id: 'm3', name: 'Rakesh Mehta', email: 'rakesh.mehta@email.com', phone: '7773334444', profileStatus: 'approved', joinDate: '2024-06-15', isActive: true }
+];
+
+export const sampleCommunityEvents = [
+  { id: 'e1', title: 'Navratri Garba Night', description: 'Traditional Garba and Dandiya event for all ages.', date: '2024-10-05', time: '19:00', location: 'Community Hall, Mumbai', attendees: 80, maxAttendees: 120, status: 'upcoming' },
+  { id: 'e2', title: 'Annual Picnic', description: 'Fun-filled day with games and food.', date: '2024-08-20', time: '09:00', location: 'Sanjay Gandhi National Park', attendees: 60, maxAttendees: 100, status: 'upcoming' }
+];
+
+export const sampleMatrimonialProfiles = [
+  { id: 'p1', userId: 'u1', userName: 'Priya Sharma', userEmail: 'priya@email.com', age: 26, profession: 'Business Analyst', location: 'Mumbai', status: 'pending', submittedDate: '2024-07-01', photo: '' },
+  { id: 'p2', userId: 'u2', userName: 'Rahul Verma', userEmail: 'rahul@email.com', age: 30, profession: 'Doctor', location: 'Delhi', status: 'approved', submittedDate: '2024-06-20', photo: '' }
+];
+
+export const sampleCommunityQueries = [
+  { id: 'q1', from: 'Amit Patel', subject: 'Membership', message: 'How do I renew my membership?', status: 'unread', createdAt: '2024-07-10', reply: '' },
+  { id: 'q2', from: 'Sneha Shah', subject: 'Event Participation', message: 'Can I bring a guest to the picnic?', status: 'replied', createdAt: '2024-07-09', reply: 'Yes, you can bring one guest.' }
 ];

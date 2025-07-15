@@ -411,6 +411,123 @@ const replyToQuery = async (req, res) => {
   }
 };
 
+// --- Bookings ---
+const getBookings = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    res.json(vendor.bookings || []);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching bookings' });
+  }
+};
+const addBooking = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    vendor.bookings.push(req.body);
+    await vendor.save();
+    res.status(201).json(vendor.bookings[vendor.bookings.length - 1]);
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding booking' });
+  }
+};
+
+// --- Reviews ---
+const getReviews = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    res.json(vendor.reviews || []);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching reviews' });
+  }
+};
+const addReview = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    vendor.reviews.push(req.body);
+    await vendor.save();
+    res.status(201).json(vendor.reviews[vendor.reviews.length - 1]);
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding review' });
+  }
+};
+// --- Earnings ---
+const getEarnings = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    res.json(vendor.earnings || []);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching earnings' });
+  }
+};
+const addEarning = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    vendor.earnings.push(req.body);
+    await vendor.save();
+    res.status(201).json(vendor.earnings[vendor.earnings.length - 1]);
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding earning' });
+  }
+};
+// --- Documents ---
+const getDocuments = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    res.json(vendor.documents || []);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching documents' });
+  }
+};
+const addDocument = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    vendor.documents.push(req.body);
+    await vendor.save();
+    res.status(201).json(vendor.documents[vendor.documents.length - 1]);
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding document' });
+  }
+};
+// --- Achievements ---
+const getAchievements = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    res.json(vendor.achievements || []);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching achievements' });
+  }
+};
+const addAchievement = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    vendor.achievements.push(req.body);
+    await vendor.save();
+    res.status(201).json(vendor.achievements[vendor.achievements.length - 1]);
+  } catch (error) {
+    res.status(500).json({ message: 'Error adding achievement' });
+  }
+};
+
+const getServicePackages = async (req, res) => {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user.userId });
+    if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+    res.json(vendor.packages || []);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching service packages' });
+  }
+};
+
 module.exports = {
   getAllVendors,
   getVendorById,
@@ -427,5 +544,16 @@ module.exports = {
   getClientLeads,
   updateLeadStatus,
   getQueries,
-  replyToQuery
+  replyToQuery,
+  getBookings,
+  addBooking,
+  getReviews,
+  addReview,
+  getEarnings,
+  addEarning,
+  getDocuments,
+  addDocument,
+  getAchievements,
+  addAchievement,
+  getServicePackages
 }; 

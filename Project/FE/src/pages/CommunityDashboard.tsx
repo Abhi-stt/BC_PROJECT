@@ -21,8 +21,15 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { communityManagementAPI } from '../services/api';
-import { communityProfilesAPI } from '../services/api';
 import { getSocket } from '../services/api';
+import {
+  sampleCommunityProfile,
+  sampleCommunityAnalytics,
+  sampleCommunityMembers,
+  sampleCommunityEvents,
+  sampleMatrimonialProfiles,
+  sampleCommunityQueries
+} from '../data/sampleData';
 
 interface CommunityMember {
   id: string;
@@ -124,8 +131,32 @@ const CommunityDashboard: React.FC = () => {
   const [replyingQuery, setReplyingQuery] = useState<CommunityQuery | null>(null);
   const [replyText, setReplyText] = useState('');
 
+  // Event CRUD
+  const [newEvent, setNewEvent] = useState({
+    title: '',
+    description: '',
+    date: '',
+    time: '',
+    location: '',
+    maxAttendees: 100
+  });
+  const handleAddEvent = async () => {
+    try {
+      const eventToAdd = {
+        ...newEvent,
+        attendees: 0,
+        status: 'upcoming'
+      };
+      const addedEvent = await communityManagementAPI.addEvent(communityId, eventToAdd);
+      setEvents(prev => [addedEvent, ...prev]);
+      setShowEventForm(false);
+      setNewEvent({ title: '', description: '', date: '', time: '', location: '', maxAttendees: 100 });
+    } catch (error) {
+      alert('Failed to add event');
+    }
+  };
+
   useEffect(() => {
-    // Load all community data
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -134,8 +165,8 @@ const CommunityDashboard: React.FC = () => {
           communityManagementAPI.getCommunityAnalytics(communityId),
           communityManagementAPI.getCommunityMembers(communityId),
           communityManagementAPI.getCommunityProfile(communityId), // events are part of profile
-          communityProfilesAPI.getMatrimonialProfiles(communityId),
-          communityProfilesAPI.getCommunityQueries(communityId)
+          communityManagementAPI.getMatrimonialProfiles(communityId),
+          communityManagementAPI.getCommunityQueries(communityId)
         ]);
         setProfile(profileData?.data || {});
         setAnalytics(analyticsData?.data || {});
@@ -144,7 +175,13 @@ const CommunityDashboard: React.FC = () => {
         setMatrimonialProfiles(profiles || []);
         setQueries(queriesData || []);
       } catch (error) {
-        alert('Failed to load community data');
+        // Fallback to mock data
+        setProfile(sampleCommunityProfile);
+        setAnalytics(sampleCommunityAnalytics);
+        setMembers(sampleCommunityMembers);
+        setEvents(sampleCommunityEvents);
+        setMatrimonialProfiles(sampleMatrimonialProfiles);
+        setQueries(sampleCommunityQueries);
       } finally {
         setLoading(false);
       }
@@ -187,17 +224,6 @@ const CommunityDashboard: React.FC = () => {
     }
   };
 
-  // Event CRUD
-  const handleAddEvent = async () => {
-    try {
-      // TODO: Replace with real event data
-      await communityManagementAPI.addEvent(communityId, {});
-      setShowEventForm(false);
-    } catch (error) {
-      alert('Failed to add event');
-    }
-  };
-
   // Member status
   const handleUpdateMemberStatus = async (memberId: string, status: CommunityMember['profileStatus']) => {
     try {
@@ -211,7 +237,7 @@ const CommunityDashboard: React.FC = () => {
   // Matrimonial profile status
   const handleUpdateProfileStatus = async (profileId: string, status: MatrimonialProfile['status']) => {
     try {
-      await communityProfilesAPI.updateProfileStatus(communityId, profileId, status);
+      await communityManagementAPI.updateProfileStatus(communityId, profileId, status);
       setMatrimonialProfiles(prev => prev.map(profile => profile.id === profileId ? { ...profile, status } : profile));
     } catch (error) {
       alert('Failed to update profile status');
@@ -221,7 +247,7 @@ const CommunityDashboard: React.FC = () => {
   // Queries
   const handleReplyToQuery = async (queryId: string, reply: string) => {
     try {
-      await communityProfilesAPI.replyToCommunityQuery(communityId, queryId, reply);
+      await communityManagementAPI.replyToCommunityQuery(communityId, queryId, reply);
       setQueries(prev => prev.map(query => query.id === queryId ? { ...query, status: 'replied', reply } : query));
     } catch (error) {
       alert('Failed to reply to query');
@@ -784,6 +810,90 @@ const CommunityDashboard: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setShowProfileForm(false)}
+                  className="btn-outline flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Event Form Modal */}
+      {showEventForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Add New Event</h3>
+              <button onClick={() => setShowEventForm(false)} className="text-gray-500 hover:text-gray-700"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Event Title</label>
+                <input
+                  type="text"
+                  value={newEvent.title}
+                  onChange={(e) => setNewEvent({...newEvent, title: e.target.value})}
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={newEvent.description}
+                  onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
+                  className="input-field h-24"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                  <input
+                    type="date"
+                    value={newEvent.date}
+                    onChange={(e) => setNewEvent({...newEvent, date: e.target.value})}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                  <input
+                    type="time"
+                    value={newEvent.time}
+                    onChange={(e) => setNewEvent({...newEvent, time: e.target.value})}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                <input
+                  type="text"
+                  value={newEvent.location}
+                  onChange={(e) => setNewEvent({...newEvent, location: e.target.value})}
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Max Attendees</label>
+                <input
+                  type="number"
+                  value={newEvent.maxAttendees}
+                  onChange={(e) => setNewEvent({...newEvent, maxAttendees: parseInt(e.target.value, 10) || 0})}
+                  className="input-field"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAddEvent}
+                  className="btn-primary flex-1"
+                  disabled={loading}
+                >
+                  {loading ? 'Adding...' : 'Add Event'}
+                </button>
+                <button
+                  onClick={() => setShowEventForm(false)}
                   className="btn-outline flex-1"
                 >
                   Cancel

@@ -1,5 +1,18 @@
 import axios from 'axios';
 import { io, Socket } from 'socket.io-client';
+import {
+  sampleCounselorProfile,
+  sampleCounselorAnalytics,
+  sampleCounselorTimeSlots,
+  sampleCounselingRequests,
+  sampleCounselorSessions,
+  sampleCommunityProfile,
+  sampleCommunityAnalytics,
+  sampleCommunityMembers,
+  sampleCommunityEvents,
+  sampleMatrimonialProfiles,
+  sampleCommunityQueries
+} from '../data/sampleData';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
@@ -684,9 +697,8 @@ export const vendorAPI = {
   // Service Packages
   getServicePackages: async () => {
     try {
-      const response = await api.get('/vendors/profile');
-      // Assume packages are part of the profile
-      return response.data.packages || [];
+      const response = await api.get('/vendors/profile/service-packages');
+      return response.data;
     } catch (error) {
       console.warn('Backend not available, using mock service packages');
       const { sampleVendorPackages } = await import('../data/sampleData');
@@ -695,7 +707,7 @@ export const vendorAPI = {
   },
   addServicePackage: async (pkg: any) => {
     try {
-      const response = await api.post('/vendors/profile/packages', pkg);
+      const response = await api.post('/vendors/profile/service-packages', pkg);
       return response.data;
     } catch (error) {
       console.warn('Backend not available, simulating add package');
@@ -704,7 +716,7 @@ export const vendorAPI = {
   },
   updateServicePackage: async (pkgId: string, pkg: any) => {
     try {
-      const response = await api.put(`/vendors/profile/packages/${pkgId}`, pkg);
+      const response = await api.put(`/vendors/profile/service-packages/${pkgId}`, pkg);
       return response.data;
     } catch (error) {
       console.warn('Backend not available, simulating update package');
@@ -713,7 +725,7 @@ export const vendorAPI = {
   },
   deleteServicePackage: async (pkgId: string) => {
     try {
-      const response = await api.delete(`/vendors/profile/packages/${pkgId}`);
+      const response = await api.delete(`/vendors/profile/service-packages/${pkgId}`);
       return response.data;
     } catch (error) {
       console.warn('Backend not available, simulating delete package');
@@ -760,6 +772,96 @@ export const vendorAPI = {
     } catch (error) {
       console.warn('Backend not available, simulating reply to query');
       return { id: queryId, reply, status: 'replied' };
+    }
+  },
+  // Bookings
+  getBookings: async () => {
+    try {
+      const response = await api.get('/vendors/profile/bookings');
+      return response.data;
+    } catch (error) {
+      const { sampleVendorBookings } = await import('../data/sampleData');
+      return sampleVendorBookings;
+    }
+  },
+  addBooking: async (booking: any) => {
+    try {
+      const response = await api.post('/vendors/profile/bookings', booking);
+      return response.data;
+    } catch (error) {
+      return { ...booking, id: Date.now().toString() };
+    }
+  },
+  // Reviews
+  getReviews: async () => {
+    try {
+      const response = await api.get('/vendors/profile/reviews');
+      return response.data;
+    } catch (error) {
+      const { sampleVendorReviews } = await import('../data/sampleData');
+      return sampleVendorReviews;
+    }
+  },
+  addReview: async (review: any) => {
+    try {
+      const response = await api.post('/vendors/profile/reviews', review);
+      return response.data;
+    } catch (error) {
+      return { ...review, id: Date.now().toString() };
+    }
+  },
+  // Earnings
+  getEarnings: async () => {
+    try {
+      const response = await api.get('/vendors/profile/earnings');
+      return response.data;
+    } catch (error) {
+      const { sampleVendorEarnings } = await import('../data/sampleData');
+      return sampleVendorEarnings;
+    }
+  },
+  addEarning: async (earning: any) => {
+    try {
+      const response = await api.post('/vendors/profile/earnings', earning);
+      return response.data;
+    } catch (error) {
+      return { ...earning, id: Date.now().toString() };
+    }
+  },
+  // Documents
+  getDocuments: async () => {
+    try {
+      const response = await api.get('/vendors/profile/documents');
+      return response.data;
+    } catch (error) {
+      const { sampleVendorDocuments } = await import('../data/sampleData');
+      return sampleVendorDocuments;
+    }
+  },
+  addDocument: async (doc: any) => {
+    try {
+      const response = await api.post('/vendors/profile/documents', doc);
+      return response.data;
+    } catch (error) {
+      return { ...doc, id: Date.now().toString() };
+    }
+  },
+  // Achievements
+  getAchievements: async () => {
+    try {
+      const response = await api.get('/vendors/profile/achievements');
+      return response.data;
+    } catch (error) {
+      const { sampleVendorAchievements } = await import('../data/sampleData');
+      return sampleVendorAchievements;
+    }
+  },
+  addAchievement: async (ach: any) => {
+    try {
+      const response = await api.post('/vendors/profile/achievements', ach);
+      return response.data;
+    } catch (error) {
+      return { ...ach, id: Date.now().toString() };
     }
   }
 };
@@ -884,9 +986,9 @@ export const counselorAPI = {
     try {
       const response = await api.get(`/counselors/${counselorId}`);
       return response.data;
-    } catch (error: any) {
-      console.error('Error fetching counselor profile:', error);
-      throw new Error('Failed to fetch counselor profile');
+    } catch (error) {
+      console.warn('Backend not available, using mock counselor profile');
+      return { data: sampleCounselorProfile };
     }
   },
   
@@ -914,9 +1016,9 @@ export const counselorAPI = {
     try {
       const response = await api.get(`/counselors/${counselorId}/analytics`);
       return response.data;
-    } catch (error: any) {
-      console.error('Error fetching counselor analytics:', error);
-      throw new Error('Failed to fetch counselor analytics');
+    } catch (error) {
+      console.warn('Backend not available, using mock counselor analytics');
+      return { data: sampleCounselorAnalytics };
     }
   },
   
@@ -925,9 +1027,9 @@ export const counselorAPI = {
     try {
       const response = await api.post(`/counselors/${counselorId}/time-slots`, timeSlotData);
       return response.data;
-    } catch (error: any) {
-      console.error('Error adding time slot:', error);
-      throw new Error('Failed to add time slot');
+    } catch (error) {
+      console.warn('Backend not available, simulating add time slot');
+      return { ...timeSlotData, id: Date.now().toString() };
     }
   },
   
@@ -935,9 +1037,9 @@ export const counselorAPI = {
     try {
       const response = await api.put(`/counselors/${counselorId}/time-slots/${slotId}`, timeSlotData);
       return response.data;
-    } catch (error: any) {
-      console.error('Error updating time slot:', error);
-      throw new Error('Failed to update time slot');
+    } catch (error) {
+      console.warn('Backend not available, simulating update time slot');
+      return { ...timeSlotData, id: slotId };
     }
   },
   
@@ -945,9 +1047,54 @@ export const counselorAPI = {
     try {
       const response = await api.delete(`/counselors/${counselorId}/time-slots/${slotId}`);
       return response.data;
-    } catch (error: any) {
-      console.error('Error deleting time slot:', error);
-      throw new Error('Failed to delete time slot');
+    } catch (error) {
+      console.warn('Backend not available, simulating delete time slot');
+      return { success: true };
+    }
+  },
+  getTimeSlots: async (counselorId: string) => {
+    try {
+      const response = await api.get(`/counselors/${counselorId}/time-slots`);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, using mock time slots');
+      return sampleCounselorTimeSlots;
+    }
+  },
+  getCounselingRequests: async (counselorId: string) => {
+    try {
+      const response = await api.get(`/counselors/${counselorId}/requests`);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, using mock counseling requests');
+      return sampleCounselingRequests;
+    }
+  },
+  updateRequestStatus: async (counselorId: string, requestId: string, status: string) => {
+    try {
+      const response = await api.put(`/counselors/${counselorId}/requests/${requestId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, simulating update request status');
+      return { id: requestId, status };
+    }
+  },
+  getSessions: async (counselorId: string) => {
+    try {
+      const response = await api.get(`/counselors/${counselorId}/sessions`);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, using mock sessions');
+      return sampleCounselorSessions;
+    }
+  },
+  updateSessionStatus: async (counselorId: string, sessionId: string, status: string) => {
+    try {
+      const response = await api.put(`/counselors/${counselorId}/sessions/${sessionId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, simulating update session status');
+      return { id: sessionId, status };
     }
   }
 };
@@ -990,9 +1137,9 @@ export const communityManagementAPI = {
     try {
       const response = await api.get(`/community/${communityId}`);
       return response.data;
-    } catch (error: any) {
-      console.error('Error fetching community profile:', error);
-      throw new Error('Failed to fetch community profile');
+    } catch (error) {
+      console.warn('Backend not available, using mock community profile');
+      return { data: sampleCommunityProfile };
     }
   },
   
@@ -1020,9 +1167,9 @@ export const communityManagementAPI = {
     try {
       const response = await api.get(`/community/${communityId}/analytics`);
       return response.data;
-    } catch (error: any) {
-      console.error('Error fetching community analytics:', error);
-      throw new Error('Failed to fetch community analytics');
+    } catch (error) {
+      console.warn('Backend not available, using mock community analytics');
+      return { data: sampleCommunityAnalytics };
     }
   },
   
@@ -1030,9 +1177,9 @@ export const communityManagementAPI = {
     try {
       const response = await api.get(`/community/${communityId}/members`, { params: filters });
       return response.data;
-    } catch (error: any) {
-      console.error('Error fetching community members:', error);
-      throw new Error('Failed to fetch community members');
+    } catch (error) {
+      console.warn('Backend not available, using mock community members');
+      return { data: sampleCommunityMembers };
     }
   },
   
@@ -1041,9 +1188,15 @@ export const communityManagementAPI = {
     try {
       const response = await api.post(`/community/${communityId}/events`, eventData);
       return response.data;
-    } catch (error: any) {
-      console.error('Error adding event:', error);
-      throw new Error('Failed to add event');
+    } catch (error) {
+      console.warn('Backend not available, simulating add event');
+      return {
+        id: Date.now().toString(),
+        ...eventData,
+        attendees: 0,
+        maxAttendees: eventData.maxAttendees || 100,
+        status: 'upcoming'
+      };
     }
   },
   
@@ -1064,6 +1217,33 @@ export const communityManagementAPI = {
     } catch (error: any) {
       console.error('Error deleting event:', error);
       throw new Error('Failed to delete event');
+    }
+  },
+  getCommunityProfileEvents: async (communityId: string) => {
+    try {
+      const response = await api.get(`/community/${communityId}`);
+      return response.data?.events || [];
+    } catch (error) {
+      console.warn('Backend not available, using mock community events');
+      return sampleCommunityEvents;
+    }
+  },
+  getMatrimonialProfiles: async (communityId: string) => {
+    try {
+      const response = await api.get(`/community/${communityId}/matrimonial-profiles`);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, using mock matrimonial profiles');
+      return sampleMatrimonialProfiles;
+    }
+  },
+  getCommunityQueries: async (communityId: string) => {
+    try {
+      const response = await api.get(`/community/${communityId}/queries`);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend not available, using mock community queries');
+      return sampleCommunityQueries;
     }
   }
 };

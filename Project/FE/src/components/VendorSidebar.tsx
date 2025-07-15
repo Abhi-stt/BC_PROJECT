@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   BarChart3, 
   Package, 
@@ -18,23 +18,27 @@ import { useAuth } from '../contexts/AuthContext';
 
 const VendorSidebar: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (tab: string) => {
+    const params = new URLSearchParams(location.search);
+    return params.get('tab') === tab || (tab === 'overview' && (!params.get('tab') || location.pathname === '/vendor/dashboard'));
+  };
 
   const menuItems = [
-    { path: '/vendor/dashboard', label: 'Dashboard', icon: BarChart3, description: 'Overview & Analytics' },
-    { path: '/vendor/services', label: 'Services', icon: Package, description: 'Manage Service Packages' },
-    { path: '/vendor/leads', label: 'Client Leads', icon: Users, description: 'Manage Client Inquiries' },
-    { path: '/vendor/messages', label: 'Messages', icon: MessageSquare, description: 'Client Communications' },
-    { path: '/vendor/bookings', label: 'Bookings', icon: Calendar, description: 'Manage Appointments' },
-    { path: '/vendor/reviews', label: 'Reviews', icon: Star, description: 'Client Feedback' },
-    { path: '/vendor/earnings', label: 'Earnings', icon: DollarSign, description: 'Revenue & Payments' },
-    { path: '/vendor/profile', label: 'Business Profile', icon: Building, description: 'Company Information' },
-    { path: '/vendor/documents', label: 'Documents', icon: FileText, description: 'Certificates & Licenses' },
-    { path: '/vendor/achievements', label: 'Achievements', icon: Award, description: 'Awards & Recognition' },
-    { path: '/vendor/settings', label: 'Settings', icon: Settings, description: 'Account Configuration' },
-    { path: '/vendor/support', label: 'Support', icon: HelpCircle, description: 'Help & Assistance' },
+    { tab: 'overview', label: 'Dashboard', icon: BarChart3, description: 'Overview & Analytics' },
+    { tab: 'services', label: 'Services', icon: Package, description: 'Manage Service Packages' },
+    { tab: 'leads', label: 'Client Leads', icon: Users, description: 'Manage Client Inquiries' },
+    { tab: 'queries', label: 'Queries', icon: MessageSquare, description: 'Client Communications' },
+    { tab: 'bookings', label: 'Bookings', icon: Calendar, description: 'Manage Appointments' },
+    { tab: 'reviews', label: 'Reviews', icon: Star, description: 'Client Feedback' },
+    { tab: 'earnings', label: 'Earnings', icon: DollarSign, description: 'Revenue & Payments' },
+    { tab: 'profile', label: 'Business Profile', icon: Building, description: 'Company Information' },
+    { tab: 'documents', label: 'Documents', icon: FileText, description: 'Certificates & Licenses' },
+    { tab: 'achievements', label: 'Achievements', icon: Award, description: 'Awards & Recognition' },
+    { tab: 'settings', label: 'Settings', icon: Settings, description: 'Account Configuration' },
+    { tab: 'support', label: 'Support', icon: HelpCircle, description: 'Help & Assistance' },
   ];
 
   return (
@@ -55,23 +59,23 @@ const VendorSidebar: React.FC = () => {
 
         {/* Navigation */}
         <nav className="space-y-1">
-          {menuItems.map((item) => {
+          {menuItems.map(item => {
             const Icon = item.icon;
             return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center space-x-3 p-3 rounded-lg transition-colors group ${
-                  isActive(item.path)
+              <button
+                key={item.tab}
+                onClick={() => navigate(`/vendor/dashboard?tab=${item.tab}`)}
+                className={`w-full text-left flex items-center space-x-3 p-3 rounded-lg transition-colors group ${
+                  isActive(item.tab)
                     ? 'bg-saffron text-white shadow-md'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
                 title={item.description}
               >
-                <Icon className={`w-5 h-5 ${isActive(item.path) ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                <Icon className={`w-5 h-5 ${isActive(item.tab) ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'}`} />
                 <div className="flex-1">
                   <span className="font-medium">{item.label}</span>
-                  <p className={`text-xs ${isActive(item.path) ? 'text-white opacity-80' : 'text-gray-400 group-hover:text-gray-500'}`}>
+                  <p className={`text-xs ${isActive(item.tab) ? 'text-white opacity-80' : 'text-gray-400 group-hover:text-gray-500'}`}>
                     {item.description}
                   </p>
                 </div>
@@ -86,27 +90,25 @@ const VendorSidebar: React.FC = () => {
                     5
                   </span>
                 )}
-              </Link>
+              </button>
             );
           })}
         </nav>
 
         {/* Quick Stats */}
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">Quick Stats</h4>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Active Leads</span>
-              <span className="font-medium text-blue-600">12</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">This Month</span>
-              <span className="font-medium text-green-600">₹45,000</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Rating</span>
-              <span className="font-medium text-yellow-600">4.8 ★</span>
-            </div>
+        <h4 className="text-sm font-medium text-gray-900 mb-3">Quick Stats</h4>
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Active Leads</span>
+            <span className="font-medium text-blue-600">12</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">This Month</span>
+            <span className="font-medium text-green-600">₹45,000</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Rating</span>
+            <span className="font-medium text-yellow-600">4.8 ★</span>
           </div>
         </div>
       </div>

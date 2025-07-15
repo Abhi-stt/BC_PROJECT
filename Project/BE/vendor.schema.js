@@ -71,10 +71,23 @@ const VendorSchema = new Schema({
     enum: ['pending', 'active', 'suspended'], 
     default: 'pending' 
   },
+  reviews: [{
+    clientName: String,
+    rating: { type: Number, min: 1, max: 5 },
+    comment: String,
+    date: Date
+  }],
+  earnings: [{
+    amount: Number,
+    date: Date,
+    source: String,
+    notes: String
+  }],
   documents: [{
     name: String,
     url: String,
-    type: String
+    type: String,
+    uploadedAt: { type: Date, default: Date.now }
   }],
   workingHours: {
     monday: { open: String, close: String },
@@ -92,7 +105,20 @@ const VendorSchema = new Schema({
     facebook: String,
     instagram: String,
     twitter: String
-  }
+  },
+  achievements: [{
+    title: String,
+    description: String,
+    date: Date
+  }],
+  bookings: [{
+    clientName: String,
+    service: String,
+    date: Date,
+    status: { type: String, enum: ['pending', 'confirmed', 'completed', 'cancelled'], default: 'pending' },
+    amount: Number,
+    notes: String
+  }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Vendor', VendorSchema); 

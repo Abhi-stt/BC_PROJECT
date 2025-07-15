@@ -22,8 +22,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { counselorAPI } from '../services/api';
-import { counselorDataAPI } from '../services/api';
 import { getSocket } from '../services/api';
+import {
+  sampleCounselorProfile,
+  sampleCounselorAnalytics,
+  sampleCounselorTimeSlots,
+  sampleCounselingRequests,
+  sampleCounselorSessions
+} from '../data/sampleData';
 
 interface TimeSlot {
   id: string;
@@ -114,22 +120,27 @@ const CounselorDashboard: React.FC = () => {
   const handleLogout = () => { localStorage.clear(); window.location.href = '/login'; };
 
   useEffect(() => {
-    // Load all counselor data
     const fetchData = async () => {
       setLoading(true);
       try {
         const [profileData, analyticsData, requests, sessions] = await Promise.all([
           counselorAPI.getCounselorProfile(counselorId),
           counselorAPI.getCounselorAnalytics(counselorId),
-          counselorDataAPI.getCounselingRequests(counselorId),
-          counselorDataAPI.getSessions(counselorId)
+          counselorAPI.getCounselingRequests(counselorId),
+          counselorAPI.getSessions(counselorId)
         ]);
         setProfile(profileData?.data || {});
         setAnalytics(analyticsData?.data || {});
         setCounselingRequests(requests || []);
         setSessions(sessions || []);
+        // Optionally fetch time slots if you have a backend endpoint
       } catch (error) {
-        alert('Failed to load counselor data');
+        // Fallback to mock data
+        setProfile(sampleCounselorProfile);
+        setAnalytics(sampleCounselorAnalytics);
+        setTimeSlots(sampleCounselorTimeSlots);
+        setCounselingRequests(sampleCounselingRequests);
+        setSessions(sampleCounselorSessions);
       } finally {
         setLoading(false);
       }
@@ -196,7 +207,7 @@ const CounselorDashboard: React.FC = () => {
   // Requests
   const handleUpdateRequestStatus = async (requestId: string, status: CounselingRequest['status']) => {
     try {
-      await counselorDataAPI.updateRequestStatus(counselorId, requestId, status);
+      await counselorAPI.updateRequestStatus(counselorId, requestId, status);
       setCounselingRequests(prev => prev.map(request => request.id === requestId ? { ...request, status } : request));
     } catch (error) {
       alert('Failed to update request status');
@@ -206,7 +217,7 @@ const CounselorDashboard: React.FC = () => {
   // Sessions
   const handleUpdateSessionStatus = async (sessionId: string, status: Session['status']) => {
     try {
-      await counselorDataAPI.updateSessionStatus(counselorId, sessionId, status);
+      await counselorAPI.updateSessionStatus(counselorId, sessionId, status);
       setSessions(prev => prev.map(session => session.id === sessionId ? { ...session, status } : session));
     } catch (error) {
       alert('Failed to update session status');
