@@ -1,0 +1,13 @@
+{
+  "rbac_enabled": true,
+  "authorization_middleware_present": true,
+
+  "data_export_supported": true,
+  "export_format": ["json"],
+
+  "data_deletion_supported": true,
+  "automated_deletion_enabled": true,
+
+  "mfa_enabled": true,
+  "strong_authentication": true
+}
